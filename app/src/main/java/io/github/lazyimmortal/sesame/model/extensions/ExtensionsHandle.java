@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 import io.github.lazyimmortal.sesame.data.TokenConfig;
+import io.github.lazyimmortal.sesame.hook.ApplicationHook;
 import io.github.lazyimmortal.sesame.hook.Toast;
 import io.github.lazyimmortal.sesame.model.task.antForest.AntForestRpcCall;
 import io.github.lazyimmortal.sesame.model.task.antSports.AntSportsRpcCall;
@@ -60,6 +61,9 @@ public class ExtensionsHandle {
                     clearCustomWalkPathIdQueue();
                 }
                 break;
+            case "Rpc":
+                test((String) fun, (String) data);
+                break;
         }
     }
 
@@ -72,6 +76,11 @@ public class ExtensionsHandle {
             return null;
         }
     }
+
+    private static void test(String fun, String data) {
+        Log.debug("收到测试消息:\n方法:" + fun + "\n数据:" + data + "\n结果:" + ApplicationHook.requestString(fun, data));
+    }
+
     private static void getWateredItems() {
         Status.getWateredFriendToday();
     }

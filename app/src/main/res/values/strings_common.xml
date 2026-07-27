@@ -248,6 +248,11 @@
     <string name="view_record_file">View record file</string>
     <string name="fetch_ranking">拉取总榜</string>
 
+    <string name="please_input_method">请输入方法</string>
+    <string name="please_input_data">请输入数据</string>
+    <string name="send_rpc_request">发送Rpc请求</string>
+    <string name="view_debug_log">查看debug日志</string>
+
     <string name="extensions">Extensions</string>
     <string name="settings">Settings</string>
 </resources>
