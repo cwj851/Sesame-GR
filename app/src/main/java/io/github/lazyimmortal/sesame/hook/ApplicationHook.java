@@ -81,6 +81,7 @@ import io.github.lazyimmortal.sesame.util.Statistics;
 import io.github.lazyimmortal.sesame.util.Status;
 import io.github.lazyimmortal.sesame.util.StringUtil;
 import io.github.lazyimmortal.sesame.util.TimeUtil;
+import io.github.lazyimmortal.sesame.util.ToastUtil;
 import io.github.lazyimmortal.sesame.util.idMap.UserIdMap;
 import lombok.Getter;
 
@@ -116,6 +117,8 @@ public class ApplicationHook implements IXposedHookLoadPackage {
     private static volatile boolean hooked = false;
 
     private static volatile boolean init = false;
+
+    private static volatile boolean running = false;
 
     private static volatile Calendar dayCalendar;
 
@@ -221,21 +224,25 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                         String targetUid = getUserId();
                         if (targetUid == null) {
                             Log.record("用户未登录");
-                            Toast.show("用户未登录");
+                            ToastUtil.show(context, "用户未登录");
                             return;
                         }
                         if (!init) {
-                            if (initHandler(true)) {
-                                init = true;
-                            }
+                            new Thread(() -> {
+                                if (!running && initHandler(true)) {
+                                    init = true;
+                                }
+                            }, "Sesame-Init").start();
                             return;
                         }
                         String currentUid = UserIdMap.getCurrentUid();
                         if (!targetUid.equals(currentUid)) {
                             if (currentUid != null) {
-                                initHandler(true);
-                                Log.record("用户已切换");
-                                Toast.show("用户已切换");
+                                new Thread(() -> {
+                                    initHandler(true);
+                                    Log.record("用户已切换");
+                                    ToastUtil.show(context, "用户已切换");
+                                }, "Sesame-SwitchUser").start();
                                 return;
                             }
                             UserIdMap.initUser(targetUid);
@@ -307,7 +314,7 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                                     }
                                     if (!targetUid.equals(currentUid)) {
                                         Log.record("开始切换用户");
-                                        Toast.show("开始切换用户");
+                                        ToastUtil.show(context, "开始切换用户");
                                         reLogin();
                                         return;
                                     }
@@ -662,14 +669,14 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                 String userId = getUserId();
                 if (userId == null) {
                     Log.record("用户未登录");
-                    Toast.show("用户未登录");
+                    ToastUtil.show(context, "用户未登录");
                     return false;
                 }
                 if (!PermissionUtil.checkAlarmPermissions()) {
                     Log.record("支付宝无闹钟权限");
                     mainHandler.postDelayed(() -> {
                         if (!PermissionUtil.checkOrRequestAlarmPermissions(context)) {
-                            android.widget.Toast.makeText(context, "请授予支付宝使用闹钟权限", android.widget.Toast.LENGTH_SHORT).show();
+                            ToastUtil.show(context, "请授予支付宝使用闹钟权限");
                         }
                     }, 2000);
                     return false;
@@ -687,14 +694,14 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                 boolean enableModule = Model.getModel(BaseModel.class).getEnableField().getValue();
                 if (!enableModule) {
                     Log.record("芝麻粒已禁用");
-                    Toast.show("芝麻粒已禁用");
+                    ToastUtil.show(context, "芝麻粒已禁用");
                     return false;
                 }
                 if (BaseModel.getBatteryPerm().getValue() && !init && !PermissionUtil.checkBatteryPermissions()) {
                     Log.record("支付宝无始终在后台运行权限");
                     mainHandler.postDelayed(() -> {
                         if (!PermissionUtil.checkOrRequestBatteryPermissions(context)) {
-                            android.widget.Toast.makeText(context, "请授予支付宝终在后台运行权限", android.widget.Toast.LENGTH_SHORT).show();
+                            ToastUtil.show(context, "请授予支付宝终在后台运行权限");
                         }
                     }, 2000);
                 }
@@ -777,7 +784,7 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                 BaseModel.initData();
                 BaseModel.initRpcRequest();
                 Log.record("加载完成");
-                Toast.show("芝麻粒加载成功");
+                ToastUtil.show(context, "芝麻粒加载成功");
             }
             offline = false;
             execHandler();
@@ -785,7 +792,7 @@ public class ApplicationHook implements IXposedHookLoadPackage {
         } catch (Throwable th) {
             Log.i(TAG, "startHandler err:");
             Log.printStackTrace(TAG, th);
-            Toast.show("芝麻粒加载失败");
+            ToastUtil.show(context, "芝麻粒加载失败");
             return false;
         }
     }
