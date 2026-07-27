@@ -1,43 +1,49 @@
 package io.github.lazyimmortal.sesame.util.idMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import de.robv.android.xposed.XposedHelpers;
-import lombok.Getter;
 
+import java.lang.reflect.Field;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import de.robv.android.xposed.XposedHelpers;
 import io.github.lazyimmortal.sesame.entity.UserEntity;
 import io.github.lazyimmortal.sesame.hook.ApplicationHook;
 import io.github.lazyimmortal.sesame.util.FileUtil;
+import io.github.lazyimmortal.sesame.util.HandlerUtil;
 import io.github.lazyimmortal.sesame.util.JsonUtil;
 import io.github.lazyimmortal.sesame.util.Log;
-
-import java.lang.reflect.Field;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 
 public class UserIdMap {
-    
+
     private static final Map<String, UserEntity> userMap = new ConcurrentHashMap<>();
-    
+
     private static final Map<String, UserEntity> readOnlyUserMap = Collections.unmodifiableMap(userMap);
-    
+
     @Getter
     private static String currentUid = null;
-    
+
     public static Map<String, UserEntity> getUserMap() {
         return readOnlyUserMap;
     }
-    
+
     public static Set<String> getUserIdSet() {
         return userMap.keySet();
     }
-    
+
     public static Collection<UserEntity> getUserEntityCollection() {
         return userMap.values();
     }
-    
+
     public synchronized static void initUser(String currentUserId) {
         setCurrentUserId(currentUserId);
-        ApplicationHook.getMainHandler().post(() -> {
+        HandlerUtil.post(() -> {
             ClassLoader loader;
             try {
                 loader = ApplicationHook.getClassLoader();
@@ -88,7 +94,7 @@ public class UserIdMap {
             }
         });
     }
-    
+
     public synchronized static void setCurrentUserId(String userId) {
         if (userId == null || userId.isEmpty()) {
             currentUid = null;
@@ -96,11 +102,11 @@ public class UserIdMap {
         }
         currentUid = userId;
     }
-    
+
     public static String getCurrentMaskName() {
         return getMaskName(currentUid);
     }
-    
+
     public static String getMaskName(String userId) {
         UserEntity userEntity = userMap.get(userId);
         if (userEntity == null) {
@@ -108,16 +114,7 @@ public class UserIdMap {
         }
         return userEntity.getMaskName();
     }
-    public static String getShowName(String userId) {
-        if (userId == null || userId.isEmpty()) {
-            return "未知用户";
-        }
-        UserEntity userEntity = userMap.get(userId);
-        if (userEntity == null) {
-            return userId; // 返回用户ID作为默认值
-        }
-        return userEntity.getShowName();
-    }
+
     public static String getFullName(String userId) {
         UserEntity userEntity = userMap.get(userId);
         if (userEntity == null) {
@@ -125,11 +122,11 @@ public class UserIdMap {
         }
         return userEntity.getFullName();
     }
-    
+
     public static UserEntity get(String userId) {
         return userMap.get(userId);
     }
-    
+
     public synchronized static void add(UserEntity userEntity) {
         String userId = userEntity.getUserId();
         if (userId == null || userId.isEmpty()) {
@@ -137,11 +134,11 @@ public class UserIdMap {
         }
         userMap.put(userId, userEntity);
     }
-    
+
     public synchronized static void remove(String userId) {
         userMap.remove(userId);
     }
-    
+
     public synchronized static void load(String userId) {
         userMap.clear();
         try {
@@ -157,15 +154,15 @@ public class UserIdMap {
             Log.printStackTrace(e);
         }
     }
-    
+
     public synchronized static void unload() {
         userMap.clear();
     }
-    
+
     public synchronized static boolean save(String userId) {
         return FileUtil.write2File(JsonUtil.toJsonString(userMap), FileUtil.getFriendIdMapFile(userId));
     }
-    
+
     public synchronized static void loadSelf(String userId) {
         userMap.clear();
         try {
@@ -179,9 +176,9 @@ public class UserIdMap {
             Log.printStackTrace(e);
         }
     }
-    
+
     public synchronized static boolean saveSelf(UserEntity userEntity) {
         return FileUtil.write2File(JsonUtil.toJsonString(userEntity), FileUtil.getSelfIdFile(userEntity.getUserId()));
     }
-    
+
 }

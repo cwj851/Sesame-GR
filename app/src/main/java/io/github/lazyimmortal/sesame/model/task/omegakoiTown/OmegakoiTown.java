@@ -9,6 +9,7 @@ import io.github.lazyimmortal.sesame.data.RuntimeInfo;
 import io.github.lazyimmortal.sesame.model.base.TaskCommon;
 import io.github.lazyimmortal.sesame.util.Log;
 
+@Deprecated
 public class OmegakoiTown extends ModelTask {
     private static final String TAG = OmegakoiTown.class.getSimpleName();
 

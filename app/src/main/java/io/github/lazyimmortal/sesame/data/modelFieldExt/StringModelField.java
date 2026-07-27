@@ -8,16 +8,20 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
-import androidx.core.content.ContextCompat;
+import com.google.android.material.button.MaterialButton;
 
-import io.github.lazyimmortal.sesame.R;
 import io.github.lazyimmortal.sesame.data.ModelField;
-import io.github.lazyimmortal.sesame.ui.StringDialog;
+import io.github.lazyimmortal.sesame.ui.dialog.ModelFieldDialog;
+import io.github.lazyimmortal.sesame.util.StringUtil;
 
 public class StringModelField extends ModelField<String> {
 
     public StringModelField(String code, String name, String value) {
         super(code, name, value);
+    }
+
+    public StringModelField(String code, String name, String value, CharSequence description) {
+        super(code, name, value, description);
     }
 
     @Override
@@ -32,22 +36,27 @@ public class StringModelField extends ModelField<String> {
 
     @Override
     public void setConfigValue(String configValue) {
+        if (StringUtil.isEmpty(configValue)) {
+            configValue = defaultValue;
+        }
         value = configValue;
     }
 
     @Override
     public View getView(Context context) {
-        Button btn = new Button(context);
-        btn.setText(getName());
+        Button btn = new MaterialButton(context);
+        btn.setText(getText(btn, getName(), getConfigValue()));
         btn.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        btn.setTextColor(ContextCompat.getColor(context, R.color.button));
-        btn.setBackground(ContextCompat.getDrawable(context, R.drawable.button));
         btn.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         btn.setMinHeight(150);
         btn.setMaxHeight(180);
         btn.setPaddingRelative(40, 0, 40, 0);
         btn.setAllCaps(false);
-        btn.setOnClickListener(v -> StringDialog.showEditDialog(v.getContext(), ((Button) v).getText(), this));
+        btn.setOnClickListener(v -> {
+            ModelFieldDialog.show(v.getContext(), this, (c, m) -> {
+                btn.setText(getText(btn, getName(), getConfigValue()));
+            });
+        });
         return btn;
     }
 

@@ -55,4 +55,7 @@ public class ThreadUtil {
         }
     }
 
+    public static void start(Runnable runnable) {
+        new Thread(runnable).start();
+    }
 }

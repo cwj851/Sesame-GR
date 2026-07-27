@@ -1,330 +1,221 @@
 package io.github.lazyimmortal.sesame.ui;
 
-import android.annotation.SuppressLint;
-import android.app.AlertDialog;
-import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
-import android.os.Bundle;
-import android.view.*;
-import android.widget.*;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.webkit.WebView;
 
-import androidx.core.content.ContextCompat;
-
-import io.github.lazyimmortal.sesame.R;
-import io.github.lazyimmortal.sesame.data.*;
-import io.github.lazyimmortal.sesame.data.modelFieldExt.common.SelectModelFieldFunc;
-import io.github.lazyimmortal.sesame.data.task.ModelTask;
-import io.github.lazyimmortal.sesame.entity.AlipayUser;
-import io.github.lazyimmortal.sesame.util.*;
-import io.github.lazyimmortal.sesame.util.idMap.*;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Map;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Objects;
+
+import io.github.lazyimmortal.sesame.R;
+import io.github.lazyimmortal.sesame.data.AppConfig;
+import io.github.lazyimmortal.sesame.data.ConfigV2;
+import io.github.lazyimmortal.sesame.data.Model;
+import io.github.lazyimmortal.sesame.data.ModuleInfo;
+import io.github.lazyimmortal.sesame.data.modelFieldExt.SelectModelField;
+import io.github.lazyimmortal.sesame.entity.idAndName.AlipayUser;
+import io.github.lazyimmortal.sesame.ui.dialog.AlertDialogBuilder;
+import io.github.lazyimmortal.sesame.ui.dialog.ModelFieldDialog;
+import io.github.lazyimmortal.sesame.util.FileUtil;
+import io.github.lazyimmortal.sesame.util.IntentUtil;
+import io.github.lazyimmortal.sesame.util.LibraryUtil;
+import io.github.lazyimmortal.sesame.util.Log;
+import io.github.lazyimmortal.sesame.util.StringUtil;
+import io.github.lazyimmortal.sesame.util.ToastUtil;
+import io.github.lazyimmortal.sesame.util.idMap.AchievementOrnamentIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.AnimalIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.BeachIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.CooperatePlantIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.FlashSaleIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.MallItemIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.MarathonIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.MemberBenefitIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.MerchantSeckillIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.NeverLandBenefitIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.NewAncientTreeIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.PromiseSimpleTemplateIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.ReserveIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.TreeIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.UserIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.VitalityBenefitIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.WalkPathIdMap;
 
 public class SettingsActivity extends BaseActivity {
-    
-    private static final Integer EXPORT_REQUEST_CODE = 1;
-    
-    private static final Integer IMPORT_REQUEST_CODE = 2;
-    
-    private Context context;
-    private Boolean isDraw = false;
-    private TabHost tabHost;
-    private ScrollView svTabs;
+
     private String userId;
     private String userName;
-    //private GestureDetector gestureDetector;
-    
+    private Boolean debug = false;
+
+    private final ActivityResultLauncher<Intent> importLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    importConfig(result.getData());
+                }
+            }
+    );
+    private final ActivityResultLauncher<Intent> exportLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    exportConfig(result.getData());
+                }
+            }
+    );
+
     @Override
     public String getBaseSubtitle() {
         return getString(R.string.settings);
     }
-    
-    @SuppressLint("MissingInflatedId")
+
+    private final int EXPORT_CONFIG = 1;
+    private final int IMPORT_CONFIG = 2;
+    private final int DELETE_CONFIG = 3;
+    private final int ONE_WAY_FRIEND = 4;
+    private final int EXTENSIONS = 5;
+    private final int SWITCH_UI = 6;
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(0, EXPORT_CONFIG, EXPORT_CONFIG, "导出配置");
+        menu.add(0, IMPORT_CONFIG, IMPORT_CONFIG, "导入配置");
+        menu.add(0, DELETE_CONFIG, DELETE_CONFIG, "删除配置");
+        menu.add(0, ONE_WAY_FRIEND, ONE_WAY_FRIEND, "单向好友");
+        menu.add(0, EXTENSIONS, EXTENSIONS, "扩展功能");
+        if (LibraryUtil.loadLibrary("sesame")) {
+            menu.add(0, SWITCH_UI, SWITCH_UI, "切换UI");
+        }
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case EXPORT_CONFIG:
+                Intent exportIntent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                exportIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                exportIntent.setType("application/json");
+                exportIntent.putExtra(Intent.EXTRA_TITLE, "[" + userName + "]-config_v2.json");
+                exportLauncher.launch(exportIntent);
+                break;
+            case IMPORT_CONFIG:
+                Intent importIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                importIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                importIntent.setType("application/json");
+                importIntent.putExtra(Intent.EXTRA_TITLE, "config_v2.json");
+                importLauncher.launch(importIntent);
+                break;
+            case DELETE_CONFIG:
+                AlertDialogBuilder.getAlertDialogBuilder(this, "删除配置", "确认删除该配置？")
+                        .setPositiveButton(R.string.ok, (dialog, id) -> {
+                            File userConfigDirectoryFile = FileUtil.getConfigV2File(userId);
+                            if (!StringUtil.isEmpty(userId)) {
+                                userConfigDirectoryFile = FileUtil.getUserConfigDirectoryFile(userId);
+                            }
+                            if (FileUtil.deleteFile(userConfigDirectoryFile)) {
+                                ToastUtil.show(this, "配置删除成功");
+                            } else {
+                                ToastUtil.show(this, "配置删除失败");
+                            }
+                            finish();
+                        }).create()
+                        .show();
+                break;
+            case ONE_WAY_FRIEND:
+                ModelFieldDialog.show(this, new SelectModelField("", "单向好友列表", null, AlipayUser.getList(user -> user.getFriendStatus() != 1)));
+                break;
+            case EXTENSIONS:
+                Intent extensionIntent = new Intent(this, ExtensionsActivity.class);
+                startActivity(extensionIntent);
+                break;
+            case SWITCH_UI:
+                Class<?> clazz = this instanceof MaterialSettingsActivity
+                        ? NewSettingsActivity.class : MaterialSettingsActivity.class;
+                AppConfig.INSTANCE.setNewUI(Objects.equals(clazz, NewSettingsActivity.class));
+                if (AppConfig.save()) {
+                    Intent intent = new Intent(this, clazz);
+                    intent.putExtra("userId", userId);
+                    intent.putExtra("userName", userName);
+                    finish();
+                    startActivity(intent);
+                } else {
+                    ToastUtil.show(this, "切换UI失败");
+                }
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    protected void load() {
         userId = null;
         userName = null;
         Intent intent = getIntent();
         if (intent != null) {
             userId = intent.getStringExtra("userId");
             userName = intent.getStringExtra("userName");
+            debug = intent.getBooleanExtra("debug", debug);
         }
         Model.initAllModel();
         UserIdMap.setCurrentUserId(userId);
         UserIdMap.load(userId);
-        CooperationIdMap.load(userId);
-        VitalityBenefitIdMap.load(userId);
-        GameCenterMallItemMap.load(userId);
-        FarmOrnamentsIdMap.load(userId);
-        MemberBenefitIdMap.load(userId);
-        PromiseSimpleTemplateIdMap.load(userId);
-        TreeIdMap.load();
-        ReserveIdMap.load();
-        AnimalIdMap.load();
-        MarathonIdMap.load();
-        NewAncientTreeIdMap.load();
-        BeachIdMap.load();
-        PlantSceneIdMap.load();
-        rpcRequestMap.load();
-        ForestHuntIdMap.load();
-        MemberCreditSesameTaskListMap.load();
-        AntForestVitalityTaskListMap.load();
-        AntForestHuntTaskListMap.load();
-        AntFarmDoFarmTaskListMap.load();
-        AntFarmDrawMachineTaskListMap.load();
-        AntDodoTaskListMap.load();
-        AntOceanAntiepTaskListMap.load();
-        AntOceanFishBlackListMap.load();
-        AntOrchardTaskListMap.load();
-        AntStallTaskListMap.load();
-        AntSportsTaskListMap.load();
-        PathThemeMapListMap.load();
-        AntMemberTaskListMap.load();
+        TreeIdMap.getInstance().load();
+        ReserveIdMap.getInstance().load();
+        AnimalIdMap.getInstance().load();
+        MarathonIdMap.getInstance().load();
+        NewAncientTreeIdMap.getInstance().load();
+        BeachIdMap.getInstance().load();
+        WalkPathIdMap.getInstance().load();
+        CooperatePlantIdMap.getInstance().load();
+        AchievementOrnamentIdMap.getInstance().load();
+        VitalityBenefitIdMap.getInstance().load();
+        MallItemIdMap.getInstance().load();
+        MemberBenefitIdMap.getInstance().load();
+        MerchantSeckillIdMap.getInstance().load();
+        NeverLandBenefitIdMap.getInstance().load();
+        FlashSaleIdMap.getInstance().load();
+        PromiseSimpleTemplateIdMap.getInstance().load();
         ConfigV2.load(userId);
-        setContentView(R.layout.activity_settings);
         if (userName != null) {
             setBaseSubtitle(getString(R.string.settings) + ": " + userName);
         }
-        setBaseSubtitleTextColor(ContextCompat.getColor(this, R.color.textColorPrimary));
-        
-        context = this;
-        tabHost = findViewById(R.id.tab_settings);
-        svTabs = findViewById(R.id.sv_tabs);
-        tabHost.setup();
-        
-        Map<String, ModelConfig> modelConfigMap = ModelTask.getModelConfigMap();
-        for (Map.Entry<String, ModelConfig> configEntry : modelConfigMap.entrySet()) {
-            String modelCode = configEntry.getKey();
-            ModelConfig modelConfig = configEntry.getValue();
-            ModelFields modelFields = modelConfig.getFields();
-            
-            tabHost.addTab(tabHost.newTabSpec(modelCode).setIndicator(modelConfig.getName()).setContent(new TabHost.TabContentFactory() {
-                @Override
-                public View createTabContent(String tag) {
-                    LinearLayout linearLayout = new LinearLayout(context);
-                    linearLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                    linearLayout.setGravity(Gravity.CENTER_HORIZONTAL);
-                    linearLayout.setOrientation(LinearLayout.VERTICAL);
-                    for (ModelField<?> modelField : modelFields.values()) {
-                        View view = modelField.getView(context);
-                        if (view != null) {
-                            linearLayout.addView(view);
-                        }
-                    }
-                    return linearLayout;
-                }
-            }));
-            
+        if (debug) {
+            WebView.setWebContentsDebuggingEnabled(true);
         }
-        tabHost.setCurrentTab(0);
-
-        /*int size = modelConfigMap.size() - 1;
-        gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
-            @Override
-            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                if (Math.abs(e1.getX() - e2.getX()) > 250) {
-                    return false;
-                    }
-                int currentView = tabHost.getCurrentTab();
-                if (e1.getY() - e2.getY() > 120 && Math.abs(velocityY) > 200) {
-                    if (currentView < size) {
-                        currentView++;
-                    }
-                    tabHost.setCurrentTab(currentView);
-                } else if (e2.getY() - e1.getY() > 120 && Math.abs(velocityY) > 200) {
-                    if (currentView > 0) {
-                        currentView--;
-                    }
-                    tabHost.setCurrentTab(currentView);
-                }
-                return true;
-            }
-        });*/
-    }
-    
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        save();
     }
 
-    /*@Override
-    public boolean dispatchTouchEvent(MotionEvent event) {
-        if (gestureDetector.onTouchEvent(event)) {
-            event.setAction(MotionEvent.ACTION_CANCEL);
-        }
-        return super.dispatchTouchEvent(event);
-    }*/
-    
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (!isDraw && hasFocus) {
-            int width = svTabs.getWidth();
-            TabWidget tabWidget = tabHost.getTabWidget();
-            int childCount = tabWidget.getChildCount();
-            for (int i = 0; i < childCount; i++) {
-                tabWidget.getChildAt(i).getLayoutParams().width = width;
-            }
-            tabWidget.requestLayout();
-            isDraw = true;
-        }
-    }
-    
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, 1, 1, "导出配置");
-        menu.add(0, 2, 2, "导入配置");
-        menu.add(0, 3, 3, "删除配置");
-        menu.add(0, 4, 4, "单向好友");
-        if (!"TEST".equals(ViewAppInfo.getAppVersion()) && LibraryUtil.loadLibrary("sesame")) {
-            menu.add(0, 5, 5, "切换至新UI");
-        }
-        return super.onCreateOptionsMenu(menu);
-    }
-    
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case 1:
-                Intent exportIntent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-                exportIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                exportIntent.setType("*/*");
-                exportIntent.putExtra(Intent.EXTRA_TITLE, "[" + userName + "]-config_v2.json");
-                startActivityForResult(exportIntent, EXPORT_REQUEST_CODE);
-                break;
-            case 2:
-                Intent importIntent = new Intent(Intent.ACTION_GET_CONTENT);
-                importIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                importIntent.setType("*/*");
-                importIntent.putExtra(Intent.EXTRA_TITLE, "config_v2.json");
-                startActivityForResult(importIntent, IMPORT_REQUEST_CODE);
-                break;
-            case 3:
-                new AlertDialog.Builder(context).setTitle("警告").setMessage("确认删除该配置？").setPositiveButton(R.string.ok, (dialog, id) -> {
-                    File userConfigDirectoryFile;
-                    if (StringUtil.isEmpty(userId)) {
-                        userConfigDirectoryFile = FileUtil.getDefaultConfigV2File();
-                    }
-                    else {
-                        userConfigDirectoryFile = FileUtil.getUserConfigDirectoryFile(userId);
-                    }
-                    if (FileUtil.deleteFile(userConfigDirectoryFile)) {
-                        ToastUtil.show(this, "配置删除成功");
-                    }
-                    else {
-                        ToastUtil.show(this, "配置删除失败");
-                    }
-                    finish();
-                }).setNegativeButton(R.string.cancel, (dialog, id) -> dialog.dismiss()).create().show();
-                break;
-            case 4:
-                ListDialog.show(this, "单向好友列表", AlipayUser.getList(user -> user.getFriendStatus() != 1), SelectModelFieldFunc.newMapInstance(), false, ListDialog.ListType.SHOW);
-                break;
-            case 5:
-                AppConfig.INSTANCE.setNewUI(true);
-                if (AppConfig.save()) {
-                    Intent intent = new Intent(this, NewSettingsActivity.class);
-                    intent.putExtra("userId", userId);
-                    intent.putExtra("userName", userName);
-                    finish();
-                    startActivity(intent);
-                }
-                else {
-                    ToastUtil.show(this, "切换失败");
-                }
-                break;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-    
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode != RESULT_OK) {
+    protected void alertBeforeSave() {
+        if (!ConfigV2.isModify(userId)) {
+            finish();
             return;
         }
-        if (requestCode == EXPORT_REQUEST_CODE) {
-            Uri uri = data.getData();
-            if (uri != null) {
-                try {
-                    File configV2File;
-                    if (StringUtil.isEmpty(userId)) {
-                        configV2File = FileUtil.getDefaultConfigV2File();
-                    }
-                    else {
-                        configV2File = FileUtil.getConfigV2File(userId);
-                    }
-                    FileInputStream inputStream = new FileInputStream(configV2File);
-                    if (FileUtil.streamTo(inputStream, getContentResolver().openOutputStream(data.getData()))) {
-                        ToastUtil.show(this, "导出成功！");
-                    }
-                    else {
-                        ToastUtil.show(this, "导出失败！");
-                    }
-                }
-                catch (IOException e) {
-                    Log.printStackTrace(e);
-                    ToastUtil.show(this, "导出失败！");
-                }
-            }
-        }
-        else if (requestCode == IMPORT_REQUEST_CODE) {
-            Uri uri = data.getData();
-            if (uri != null) {
-                try {
-                    File configV2File;
-                    if (StringUtil.isEmpty(userId)) {
-                        configV2File = FileUtil.getDefaultConfigV2File();
-                    }
-                    else {
-                        configV2File = FileUtil.getConfigV2File(userId);
-                    }
-                    FileOutputStream outputStream = new FileOutputStream(configV2File);
-                    if (FileUtil.streamTo(getContentResolver().openInputStream(data.getData()), outputStream)) {
-                        ToastUtil.show(this, "导入成功！");
-                        if (!StringUtil.isEmpty(userId)) {
-                            try {
-                                Intent intent = new Intent("com.eg.android.AlipayGphone.sesame.restart");
-                                intent.putExtra("userId", userId);
-                                sendBroadcast(intent);
-                            }
-                            catch (Throwable th) {
-                                Log.printStackTrace(th);
-                            }
-                        }
-                        Intent intent = getIntent();
-                        finish();
-                        startActivity(intent);
-                    }
-                    else {
-                        ToastUtil.show(this, "导入失败！");
-                    }
-                }
-                catch (IOException e) {
-                    Log.printStackTrace(e);
-                    ToastUtil.show(this, "导入失败！");
-                }
-            }
-        }
+        AlertDialogBuilder.getAlertDialogBuilder(this, "修改配置", "配置文件发生改变，确认要保存吗？")
+                .setPositiveButton(R.string.ok, ((dialogInterface, i) -> {
+                    save();
+                    finish();
+                }))
+                .setNegativeButton(R.string.cancel, (dialogInterface, i) -> finish())
+                .create()
+                .show();
     }
-    
-    private void save() {
-        if (ConfigV2.isModify(userId) && ConfigV2.save(userId, false)) {
+
+    protected void save() {
+        if (ConfigV2.save(userId, false)) {
             ToastUtil.show(this, "保存成功！");
             if (!StringUtil.isEmpty(userId)) {
                 try {
-                    Intent intent = new Intent("com.eg.android.AlipayGphone.sesame.restart");
+                    Intent intent = new Intent(IntentUtil.ACTION_ALIPAY_RESTART);
                     intent.putExtra("userId", userId);
                     sendBroadcast(intent);
-                }
-                catch (Throwable th) {
+                } catch (Throwable th) {
                     Log.printStackTrace(th);
                 }
             }
@@ -333,5 +224,52 @@ public class SettingsActivity extends BaseActivity {
             UserIdMap.save(userId);
         }
     }
-    
+
+    protected String getSettingsUserId() {
+        return userId;
+    }
+
+    private void importConfig(Intent importIntent) {
+        if (importIntent.getData() == null) {
+            return;
+        }
+        try (InputStream inputStream = getContentResolver().openInputStream(importIntent.getData());
+             FileOutputStream outputStream = new FileOutputStream(FileUtil.getConfigV2File(userId))) {
+            if (FileUtil.streamTo(inputStream, outputStream)) {
+                ToastUtil.show(this, "导入配置成功！");
+                if (!StringUtil.isEmpty(userId)) {
+                    try {
+                        Intent intent = new Intent(IntentUtil.ACTION_ALIPAY_RESTART);
+                        intent.putExtra("userId", userId);
+                        sendBroadcast(intent);
+                    } catch (Throwable th) {
+                        Log.printStackTrace(th);
+                    }
+                }
+                Intent intent = getIntent();
+                finish();
+                startActivity(intent);
+                return;
+            }
+        } catch (IOException e) {
+            Log.printStackTrace(e);
+        }
+        ToastUtil.show(this, "导入配置失败！");
+    }
+
+    private void exportConfig(Intent exportIntent) {
+        if (exportIntent.getData() == null) {
+            return;
+        }
+        try (FileInputStream inputStream = new FileInputStream(FileUtil.getConfigV2File(userId));
+             OutputStream outputStream = getContentResolver().openOutputStream(exportIntent.getData())) {
+            if (FileUtil.streamTo(inputStream, outputStream)) {
+                ToastUtil.show(this, "导出配置成功！");
+                return;
+            }
+        } catch (IOException e) {
+            Log.printStackTrace(e);
+        }
+        ToastUtil.show(this, "导出配置失败！");
+    }
 }

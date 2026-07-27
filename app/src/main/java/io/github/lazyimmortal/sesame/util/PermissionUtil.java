@@ -1,5 +1,6 @@
 package io.github.lazyimmortal.sesame.util;
 
+import android.Manifest;
 import android.app.AlarmManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -10,7 +11,10 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.PowerManager;
 import android.provider.Settings;
+
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.AlarmManagerCompat;
+
 import io.github.lazyimmortal.sesame.hook.ApplicationHook;
 import io.github.lazyimmortal.sesame.model.task.antForest.AntForestRpcCall;
 
@@ -19,9 +23,9 @@ public class PermissionUtil {
 
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
 
-    private static final String[] PERMISSIONS_STORAGE = {
-            "android.permission.READ_EXTERNAL_STORAGE",
-            "android.permission.WRITE_EXTERNAL_STORAGE",
+    private static final String[] STORAGE_PERMISSIONS = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
 
     public static Boolean checkOrRequestAllPermissions(AppCompatActivity activity) {
@@ -33,7 +37,7 @@ public class PermissionUtil {
             //判断是否有管理外部存储的权限
             return Environment.isExternalStorageManager();
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            for (String permission : PERMISSIONS_STORAGE) {
+            for (String permission : STORAGE_PERMISSIONS) {
                 if (context.checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
                     return false;
                 }
@@ -63,7 +67,7 @@ public class PermissionUtil {
                     activity.startActivity(intent);
                 }
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                activity.requestPermissions(PERMISSIONS_STORAGE, REQUEST_EXTERNAL_STORAGE);
+                activity.requestPermissions(STORAGE_PERMISSIONS, REQUEST_EXTERNAL_STORAGE);
             }
         } catch (Exception e) {
             Log.printStackTrace(TAG, e);
@@ -84,13 +88,10 @@ public class PermissionUtil {
         } catch (Exception e) {
             return false;
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            //判断是否有使用闹钟的权限
-            AlarmManager systemService = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-            if (systemService != null) {
-                return systemService.canScheduleExactAlarms();
-            }
-            return true;
+        //判断是否有使用闹钟的权限
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager != null) {
+            return AlarmManagerCompat.canScheduleExactAlarms(alarmManager);
         }
         return true;
     }

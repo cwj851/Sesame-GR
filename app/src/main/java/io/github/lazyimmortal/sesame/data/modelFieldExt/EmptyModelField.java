@@ -1,6 +1,5 @@
 package io.github.lazyimmortal.sesame.data.modelFieldExt;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.View;
@@ -8,26 +7,34 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
-import androidx.core.content.ContextCompat;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.android.material.button.MaterialButton;
 
-import io.github.lazyimmortal.sesame.R;
 import io.github.lazyimmortal.sesame.data.ModelField;
+import io.github.lazyimmortal.sesame.ui.dialog.ModelFieldDialog;
 import io.github.lazyimmortal.sesame.util.ToastUtil;
 
 public class EmptyModelField extends ModelField<Object> {
 
-    private final Runnable clickRunner;
+    private final ModelFieldDialog.OnModelFieldClickListener listener;
 
     public EmptyModelField(String code, String name) {
-        super(code, name, null);
-        this.clickRunner = null;
+        this(code, name, null);
     }
 
-    public EmptyModelField(String code, String name, Runnable clickRunner) {
-        super(code, name, null);
-        this.clickRunner = clickRunner;
+    public EmptyModelField(String code, String name, ModelFieldDialog.OnModelFieldClickListener listener) {
+        this(code, name, listener, null);
+    }
+
+    public EmptyModelField(String code, String name, ModelFieldDialog.OnModelFieldClickListener listener, CharSequence description) {
+        super(code, name, null, description);
+        if (listener == null) {
+            this.listener = (context, modelField) -> ToastUtil.show(context, "无配置项");
+        } else if (description == null) {
+            this.listener = listener;
+        } else {
+            this.listener = ((context, modelField) -> ModelFieldDialog.show(context, modelField, listener));
+        }
     }
 
     @Override
@@ -41,28 +48,15 @@ public class EmptyModelField extends ModelField<Object> {
 
     @JsonIgnore
     public View getView(Context context) {
-        Button btn = new Button(context);
+        Button btn = new MaterialButton(context);
         btn.setText(getName());
         btn.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        btn.setTextColor(ContextCompat.getColor(context, R.color.button));
-        btn.setBackground(ContextCompat.getDrawable(context, R.drawable.button));
         btn.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         btn.setMinHeight(150);
         btn.setMaxHeight(180);
         btn.setPaddingRelative(40, 0, 40, 0);
         btn.setAllCaps(false);
-        if (clickRunner != null) {
-            btn.setOnClickListener(v -> new AlertDialog.Builder(context)
-                    .setTitle("警告")
-                    .setMessage("确认执行该操作？")
-                    .setPositiveButton(R.string.ok, (dialog, id) -> clickRunner.run())
-                    .setNegativeButton(R.string.cancel, (dialog, id) -> dialog.dismiss())
-                    .create()
-                    .show());
-        } else {
-            btn.setOnClickListener(v -> ToastUtil.show(context, "无配置项"));
-        }
+        btn.setOnClickListener(v -> listener.onClick(v.getContext(), this));
         return btn;
     }
-
 }

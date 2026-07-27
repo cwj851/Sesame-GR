@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="send_rpc_request">Send RPC request</string>
+    <string name="view_debug_log">View debug log</string>
+    <string name="please_input_method">Please input method</string>
+    <string name="please_input_data">Please input data</string>
+
+    <string name="parse_give_prop_rds">Parse give prop rds</string>
+    <string name="please_input_give_prop_request_data">Please input give prop request data</string>
+</resources>

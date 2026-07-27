@@ -1,16 +1,25 @@
 package io.github.lazyimmortal.sesame.rpc.bridge;
 
+import android.content.Context;
+import android.content.Intent;
+
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import io.github.lazyimmortal.sesame.data.RuntimeInfo;
 import io.github.lazyimmortal.sesame.entity.RpcEntity;
 import io.github.lazyimmortal.sesame.hook.ApplicationHook;
 import io.github.lazyimmortal.sesame.model.normal.base.BaseModel;
 import io.github.lazyimmortal.sesame.rpc.intervallimit.RpcIntervalLimit;
-import io.github.lazyimmortal.sesame.util.*;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import io.github.lazyimmortal.sesame.util.ClassUtil;
+import io.github.lazyimmortal.sesame.util.Log;
+import io.github.lazyimmortal.sesame.util.NotificationUtil;
+import io.github.lazyimmortal.sesame.util.RandomUtil;
+import io.github.lazyimmortal.sesame.util.StringUtil;
+import io.github.lazyimmortal.sesame.util.TimeUtil;
 
 public class OldRpcBridge implements RpcBridge {
 
@@ -110,7 +119,7 @@ public class OldRpcBridge implements RpcBridge {
                                 if (msg.contains("登录超时")) {
                                     if (!ApplicationHook.isOffline()) {
                                         ApplicationHook.setOffline(true);
-                                        NotificationUtil.updateStatusText("登录超时");
+                                        NotificationUtil.updateNotification("登录超时");
                                         if (BaseModel.getTimeoutRestart().getValue()) {
                                             Log.record("尝试重新登录");
                                             ApplicationHook.reLoginByBroadcast();
@@ -118,10 +127,8 @@ public class OldRpcBridge implements RpcBridge {
                                     }
                                 } else if (msg.contains("[1004]") && "alipay.antmember.forest.h5.collectEnergy".equals(method)) {
                                     if (BaseModel.getWaitWhenException().getValue() > 0) {
-                                        long waitTime = System.currentTimeMillis() + BaseModel.getWaitWhenException().getValue();
-                                        RuntimeInfo.getInstance().put(RuntimeInfo.RuntimeInfoKey.ForestPauseTime, waitTime);
-                                        NotificationUtil.updateStatusText("异常");
-                                        Log.record("触发异常,等待至" + TimeUtil.getCommonDate(waitTime));
+                                        RuntimeInfo.getInstance().put(RuntimeInfo.RuntimeInfoKey.ForestPauseTime, BaseModel.getNextRunTime());
+                                        NotificationUtil.sendAntForestErrorNotification();
                                     }
                                     if (retryInterval < 0) {
                                         try {
@@ -158,6 +165,10 @@ public class OldRpcBridge implements RpcBridge {
                                         }
                                     }
                                     continue;
+                                }else if (msg.contains("[1009]")) {
+                                    Context context = ApplicationHook.getContext();
+                                    context.sendBroadcast(new Intent("com.eg.android.AlipayGphone.captcha"));
+                                    Log.record("系统繁忙，可能需要滑动验证");
                                 }
                             }
                         }
@@ -170,12 +181,11 @@ public class OldRpcBridge implements RpcBridge {
                     rpcEntity.setResponseObject(resultObject, resultStr);
                     if (resultObject.optString("memo", "").contains("系统繁忙")) {
                         ApplicationHook.setOffline(true);
-                        NotificationUtil.updateStatusText("系统繁忙，可能需要滑动验证");
+                        NotificationUtil.updateNotification("系统繁忙，可能需要滑动验证");
                         Log.record("系统繁忙，可能需要滑动验证");
                         return null;
                     }
-                    if (!resultObject.optBoolean("success")
-                            && !resultObject.optBoolean("isSuccess")) {
+                    if (resultObject.has("error")) {
                         rpcEntity.setError();
                         Log.error("old rpc response | id: " + id + " | method: " + method + " args: " + args + " | data:" + rpcEntity.getResponseString());
                     }

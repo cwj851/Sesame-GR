@@ -2,10 +2,12 @@ package io.github.lazyimmortal.sesame.model.task.readingDada;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import io.github.lazyimmortal.sesame.data.ModelGroup;
 import io.github.lazyimmortal.sesame.model.normal.answerAI.AnswerAI;
 import io.github.lazyimmortal.sesame.util.JsonUtil;
 import io.github.lazyimmortal.sesame.util.Log;
+import io.github.lazyimmortal.sesame.util.MessageUtil;
 import io.github.lazyimmortal.sesame.util.StringUtil;
 
 /**
@@ -32,25 +34,21 @@ public class ReadingDada {
             } else {
                 outBizId = "";
             }
-            String s = ReadingDadaRpcCall.getQuestion(activityId);
-            JSONObject jo = new JSONObject(s);
-            if ("200".equals(jo.getString("resultCode"))) {
-                JSONArray jsonArray = jo.getJSONArray("options");
-                String answer = AnswerAI.getAnswer(jo.getString("title"), JsonUtil.jsonArrayToList(jsonArray));
-                if (answer == null || answer.isEmpty()) {
-                    answer = jsonArray.getString(0);
-                }
-                s = ReadingDadaRpcCall.submitAnswer(activityId, outBizId, jo.getString("questionId"), answer);
-                jo = new JSONObject(s);
-                if ("200".equals(jo.getString("resultCode"))) {
-                    Log.record("答题完成");
-                    return true;
-                } else {
-                    Log.record("答题失败");
-                }
-            } else {
-                Log.record("获取问题失败");
+            JSONObject jo = new JSONObject(ReadingDadaRpcCall.getQuestion(activityId));
+            if (!MessageUtil.checkResponse(TAG, jo)) {
+                return false;
             }
+            JSONArray options = jo.getJSONArray("options");
+            String answer = AnswerAI.getAnswer(jo.getString("title"), JsonUtil.jsonArrayToList(options));
+            if (StringUtil.isEmpty(answer)) {
+                answer = options.getString(0);
+            }
+            jo = new JSONObject(ReadingDadaRpcCall.submitAnswer(activityId, outBizId, jo.getString("questionId"), answer));
+            if (!MessageUtil.checkResponse(TAG, jo)) {
+                return false;
+            }
+            Log.record("答答星球🪐答题完成[" + answer + "]");
+            return true;
         } catch (Throwable e) {
             Log.i(TAG, "answerQuestion err:");
             Log.printStackTrace(TAG, e);

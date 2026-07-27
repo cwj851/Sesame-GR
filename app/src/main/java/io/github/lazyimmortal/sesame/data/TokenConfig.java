@@ -6,64 +6,54 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import io.github.lazyimmortal.sesame.util.FileUtil;
 import io.github.lazyimmortal.sesame.util.JsonUtil;
 import io.github.lazyimmortal.sesame.util.Log;
-import io.github.lazyimmortal.sesame.util.RandomUtil;
 import io.github.lazyimmortal.sesame.util.StringUtil;
 import io.github.lazyimmortal.sesame.util.TimeUtil;
 import lombok.Data;
 
 @Data
+@Deprecated
 public class TokenConfig {
-    
+
     private static final String TAG = TokenConfig.class.getSimpleName();
-    
+
     public static final TokenConfig INSTANCE = new TokenConfig();
-    
+
     @JsonIgnore
     private boolean init;
-    
+
     // sports
     private final Queue<String> customWalkPathIdQueue = new LinkedList<>();
-    
+
     // farm
-    private final Map<String, String> answerList = new HashMap<>();
-    
+    private final Set<Question> questionSet = new HashSet<>();
+
     // ecoLife
-    private final Set<Map<String, String> > dishImageList = new HashSet<>();
-    
-    public static String getCustomWalkPathId(Set<String> customWalkPathIdListSet) {
+    private final Set<DishImage> dishImageList = new HashSet<>();
+
+    public static String getCustomWalkPathId(String walkCustomPathId) {
         String pathId = INSTANCE.customWalkPathIdQueue.poll();
         if (pathId != null) {
             save();
             return pathId;
         }
-        List<String> list = new ArrayList<>(customWalkPathIdListSet);
-        if (!list.isEmpty()) {
-            return list.get(RandomUtil.nextInt(0, list.size() - 1));
-        }
-        return null;
+        return walkCustomPathId;
     }
-    
+
     public static Boolean addCustomWalkPathIdQueue(String pathId) {
         INSTANCE.customWalkPathIdQueue.add(pathId);
         return save();
     }
-    
+
     public static Boolean clearCustomWalkPathIdQueue() {
         TokenConfig tokenConfig = INSTANCE;
         if (!tokenConfig.customWalkPathIdQueue.isEmpty()) {
@@ -72,93 +62,49 @@ public class TokenConfig {
         }
         return true;
     }
-    
-    public static String getAnswer(String question) {
-        Calendar calendar = TimeUtil.getToday();
-        long timeMillis = calendar.getTimeInMillis();
-        return  INSTANCE.answerList.get(timeMillis + "::" + question);
-    }
-    
-    public static void saveAnswer(String question, String answer) {
-        Calendar todayCalendar = TimeUtil.getToday();
-        long todayTimeMillis = todayCalendar.getTimeInMillis();
-        long tomorrowTimeMillis = todayTimeMillis + TimeUnit.DAYS.toMillis(1);
-        String todayTimeMillisStr = String.valueOf(todayTimeMillis);
-        String tomorrowTimeMillisStr = String.valueOf(tomorrowTimeMillis);
-        
-        question = tomorrowTimeMillis + "::" + question;
-        TokenConfig tokenConfig = INSTANCE;
-        if (Objects.equals(tokenConfig.answerList.get(question), answer)) {
-            return;
-        }
-        tokenConfig.answerList.put(question, answer);
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            tokenConfig.answerList.entrySet().removeIf(
-                    entry -> !entry.getKey().startsWith(todayTimeMillisStr)
-                             && !entry.getKey().startsWith(tomorrowTimeMillisStr));
-        } else {
-            Iterator<Map.Entry<String, String>> iterator = tokenConfig.answerList.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<String, String> entry = iterator.next();
-                if (!entry.getKey().startsWith(todayTimeMillisStr)
-                    && !entry.getKey().startsWith(tomorrowTimeMillisStr)) {
-                    iterator.remove();
-                }
+
+    public static String getQuestionAnswer(String question) {
+        for (Question qa : INSTANCE.questionSet) {
+            if (qa.question.equals(question)) {
+                return qa.answer;
             }
         }
-        save();
+        return new Question().answer;
     }
-    
-    public static Map<String, String> getRandomDishImage() {
-        List<Map<String, String> > list = new ArrayList<>(INSTANCE.dishImageList);
-        if (list.isEmpty()) {
-            return null;
-        }
-        int pos = RandomUtil.nextInt(0, list.size() - 1);
-        Map<String, String> dishImage = list.get(pos);
-        return checkDishImage(dishImage) ? dishImage : null;
-    }
-    
-    public static void saveDishImage(Map<String, String> dishImage) {
-        if (!checkDishImage(dishImage)) {
-            return;
-        }
-        TokenConfig tokenConfig = INSTANCE;
-        if (!tokenConfig.dishImageList.contains(dishImage)) {
-            tokenConfig.dishImageList.add(dishImage);
+
+    public static void saveQuestion(String question, String answer) {
+        String todayDate = TimeUtil.getDateStr();
+        String tomorrowDate = TimeUtil.getDateStr(1);
+        Question newQuestion = new Question(tomorrowDate, question, answer);
+
+        Set<Question> set = INSTANCE.questionSet;
+        if (!set.contains(newQuestion)) {
+            // 更新问题集合
+            set.add(newQuestion);
+
+            // 移除过期问题
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                set.removeIf(q -> !q.date.equals(todayDate) && !q.date.equals(tomorrowDate));
+            } else {
+                Iterator<Question> iterator = set.iterator();
+                while (iterator.hasNext()) {
+                    Question q = iterator.next();
+                    if (!q.date.equals(todayDate) && !q.date.equals(tomorrowDate)) {
+                        iterator.remove();
+                    }
+                }
+            }
             save();
         }
     }
-    
-    public static int getDishImageCount() {
-        load();
-        return INSTANCE.dishImageList.size();
-    }
-    
-    public static Boolean clearDishImage() {
-        TokenConfig.INSTANCE.dishImageList.clear();
-        return save();
-    }
-    
-    public static Boolean checkDishImage(Map<String, String> dishImage) {
-        if (dishImage == null) {
-            return false;
-        }
-        String beforeMealsImageId = dishImage.get("BEFORE_MEALS");
-        String afterMealsImageId = dishImage.get("AFTER_MEALS");
-        return !StringUtil.isEmpty(beforeMealsImageId)
-               && !StringUtil.isEmpty(afterMealsImageId)
-               && !Objects.equals(beforeMealsImageId, afterMealsImageId);
-    }
-    
+
     public static Boolean save() {
         Log.record("保存Token配置");
         return FileUtil.setTokenConfigFile(toSaveStr());
     }
-    
+
     public static synchronized TokenConfig load() {
-        File tokenConfigFile = FileUtil.getTokenConfigFile();
+        File tokenConfigFile = new File(FileUtil.MAIN_DIRECTORY_FILE, "token_config.json");
         try {
             if (tokenConfigFile.exists()) {
                 String json = FileUtil.readFromFile(tokenConfigFile);
@@ -189,7 +135,7 @@ public class TokenConfig {
         INSTANCE.setInit(true);
         return INSTANCE;
     }
-    
+
     public static synchronized void unload() {
         try {
             JsonUtil.copyMapper().updateValue(INSTANCE, new TokenConfig());
@@ -197,8 +143,65 @@ public class TokenConfig {
             Log.printStackTrace(TAG, e);
         }
     }
-    
+
     public static String toSaveStr() {
         return JsonUtil.toFormatJsonString(INSTANCE);
+    }
+
+    @Data
+    public static class DishImage {
+        private final String beforeMeals;
+        private final String afterMeals;
+
+        public DishImage() {
+            beforeMeals = afterMeals = null;
+        }
+
+        public DishImage(String beforeMeals, String afterMeals) {
+            this.beforeMeals = beforeMeals;
+            this.afterMeals = afterMeals;
+        }
+
+        public Boolean checkDishImage() {
+            return !StringUtil.isEmpty(beforeMeals)
+                    && !StringUtil.isEmpty(afterMeals)
+                    && !Objects.equals(beforeMeals, afterMeals);
+        }
+    }
+
+    @Data
+    public static class Question {
+        private final String date;
+        private final String question;
+        private final String answer;
+
+        public Question() {
+            date = question = answer = null;
+        }
+
+        public Question(String date, String question, String answer) {
+            this.date = date;
+            this.question = question;
+            this.answer = answer;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(date, question, answer);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) {
+                return true;
+            }
+            if (obj instanceof Question) {
+                Question questionObj = (Question) obj;
+                return Objects.equals(questionObj.date, date)
+                        && Objects.equals(questionObj.question, question)
+                        && Objects.equals(questionObj.answer, answer);
+            }
+            return false;
+        }
     }
 }

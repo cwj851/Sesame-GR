@@ -1,163 +1,135 @@
 package io.github.lazyimmortal.sesame.ui;
 
-import android.app.AlertDialog;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
-
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.viewpager2.widget.ViewPager2;
+
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
+
+import java.util.Map;
+import java.util.Objects;
 
 import io.github.lazyimmortal.sesame.R;
-import io.github.lazyimmortal.sesame.data.TokenConfig;
-import io.github.lazyimmortal.sesame.util.ToastUtil;
+import io.github.lazyimmortal.sesame.data.ModelConfig;
+import io.github.lazyimmortal.sesame.data.ModelField;
+import io.github.lazyimmortal.sesame.data.ModelFields;
+import io.github.lazyimmortal.sesame.data.extensions.ExtensionsConfig;
+import io.github.lazyimmortal.sesame.data.extensions.ExtensionsModel;
+import io.github.lazyimmortal.sesame.model.extensions.backupRestore.BackupRestore;
+import io.github.lazyimmortal.sesame.model.extensions.logModel.LogType;
+import io.github.lazyimmortal.sesame.ui.dialog.AlertDialogBuilder;
+import io.github.lazyimmortal.sesame.util.FileUtil;
 
 public class ExtensionsActivity extends BaseActivity {
-    
-    Button btnGetWateredItems,btnGetWateringItems;
-    Button btnGetTreeItems, btnGetNewTreeItems;
-    Button btnQueryAreaTrees, btnGetUnlockTreeItems;
-    Button btnClearDishImage;
-    Button btnSetCustomWalkPathId, btnSetCustomWalkPathIdQueue;
-    Button btnDeveloperMode;
-    Button btnFillWateredFriendList;
+
+    public final ActivityResultLauncher<Intent> importBackupLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    BackupRestore.restoreByLocal(ExtensionsActivity.this, result.getData());
+                }
+            }
+    );
+    public final ActivityResultLauncher<Intent> exportBackupLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    BackupRestore.backupToLocal(ExtensionsActivity.this, result.getData());
+                }
+            }
+    );
+    public final ActivityResultLauncher<Intent> exportRuntimeLogLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    FileUtil.exportFile(ExtensionsActivity.this, FileUtil.getLogFile(LogType.RUNTIME_LOG), result.getData().getData());
+                }
+            }
+    );
 
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        setContentView(R.layout.activity_extend);
-        setBaseTitle(getString(R.string.extensions));
-        btnGetWateredItems = findViewById(R.id.btn_get_watered_items);
-        btnGetWateringItems = findViewById(R.id.btn_get_watering_items);
-        btnGetTreeItems = findViewById(R.id.btn_get_tree_items);
-        btnGetNewTreeItems = findViewById(R.id.btn_get_newTree_items);
-        btnQueryAreaTrees = findViewById(R.id.btn_query_area_trees);
-        btnGetUnlockTreeItems = findViewById(R.id.btn_get_unlock_treeItems);
-        btnClearDishImage = findViewById(R.id.btn_clear_dish_image);
-        btnSetCustomWalkPathId = findViewById(R.id.btn_set_custom_walk_path_id_list);
-        btnSetCustomWalkPathIdQueue = findViewById(R.id.btn_set_custom_walk_path_id_queue);
-        btnDeveloperMode = findViewById(R.id.btn_developer_mode);
-        btnFillWateredFriendList = findViewById(R.id.btn_fill_watered_friend_list);
-        
-        btnGetWateredItems.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                sendItemsBroadcast("antForest", "getWateredItems", null);
-                ToastUtil.show(ExtensionsActivity.this, "已发送查询请求，请在森林日志查看结果！");
-            }
-        });
-        
-        btnGetWateringItems.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                sendItemsBroadcast("antForest", "getWateringItems", null);
-                ToastUtil.show(ExtensionsActivity.this, "已发送查询请求，请在森林日志查看结果！");
-            }
-        });
-        
-        btnGetTreeItems.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                sendItemsBroadcast("antForest", "getTreeItems", null);
-                ToastUtil.show(ExtensionsActivity.this, "已发送查询请求，请在森林日志查看结果！");
-            }
-        });
+        setContentView(R.layout.activity_material_settings);
+        setBaseSubtitle(getString(R.string.extensions));
 
-        btnGetNewTreeItems.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                sendItemsBroadcast("antForest", "getNewTreeItems", null);
-                ToastUtil.show(ExtensionsActivity.this, "已发送查询请求，请在森林日志查看结果！");
-            }
-        });
 
-        btnQueryAreaTrees.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                sendItemsBroadcast("antForest", "queryAreaTrees", null);
-                ToastUtil.show(ExtensionsActivity.this, "已发送查询请求，请在森林日志查看结果！");
-            }
-        });
+        TabLayout tabLayout = findViewById(R.id.tabLayout);
+        ViewPager2 viewPager = findViewById(R.id.viewPager);
 
-        btnGetUnlockTreeItems.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                sendItemsBroadcast("antForest", "getUnlockTreeItems", null);
-                ToastUtil.show(ExtensionsActivity.this, "已发送查询请求，请在森林日志查看结果！");
-            }
-        });
-
-        btnClearDishImage.setOnClickListener(v -> {
-            Context context = ExtensionsActivity.this;
-            new AlertDialog.Builder(context)
-                    .setTitle(R.string.clear_dish_image)
-                    .setMessage("确认清空" + TokenConfig.getDishImageCount() + "组光盘行动图片？")
-                    .setPositiveButton(R.string.ok, (dialog, which) -> {
-                        if (TokenConfig.clearDishImage()) {
-                            ToastUtil.show(context, "光盘行动图片清空成功");
-                        } else {
-                            ToastUtil.show(context, "光盘行动图片清空失败");
-                        }
-                    })
-                    .setNegativeButton(R.string.cancel, (dialog, which) -> dialog.dismiss())
-                    .show();
-        });
-
-        btnSetCustomWalkPathId.setOnClickListener(v -> {
-            Context context = ExtensionsActivity.this;
-            EditText input = new EditText(context);
-            input.setHint(R.string.msg_input_custom_walk_path_id);
-
-            new AlertDialog.Builder(context)
-                    .setTitle(R.string.set_custom_walk_path_id_list)
-                    .setView(input)
-                    .setPositiveButton(R.string.btn_add_custom_walk_path_id, (dialog, which) -> {
-                        String text = input.getText().toString().trim();
-                        sendItemsBroadcast("setCustomWalkPathIdList", "addCustomWalkPathId", text);
-                    }).show();
-        });
-        btnSetCustomWalkPathIdQueue.setOnClickListener(v -> {
-            Context context = ExtensionsActivity.this;
-            EditText input = new EditText(context);
-            input.setHint(R.string.msg_input_custom_walk_path_id);
-
-            new AlertDialog.Builder(context)
-                    .setTitle(R.string.set_custom_walk_path_id_queue)
-                    .setView(input)
-                    .setPositiveButton(R.string.btn_add_custom_walk_path_id, (dialog, which) -> {
-                        String text = input.getText().toString().trim();
-                        sendItemsBroadcast("setCustomWalkPathIdQueue", "addCustomWalkPathIdQueue", text);
-                    }).setNegativeButton(getString(R.string.btn_clear_custom_walk_path_id_queue), (dialog, which) -> {
-                        sendItemsBroadcast("setCustomWalkPathIdQueue", "clearCustomWalkPathIdQueue", null);
-                    }).show();
-        });
-
-        btnDeveloperMode.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                try {
-                    startActivity(new Intent(ExtensionsActivity.this, Class.forName("io.github.lazyimmortal.sesame.ui.AlphaActivity")));
-                } catch (Exception e) {
-                    ToastUtil.show(ExtensionsActivity.this, "不符合开启资格！");
+        ExtensionsModel.initAllModel();
+        ExtensionsConfig.load();
+        ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(this);
+        viewPager.setAdapter(viewPagerAdapter);
+        Map<String, ModelConfig> modelConfigMap = ExtensionsModel.getModelConfigMap();
+        for (Map.Entry<String, ModelConfig> configEntry : modelConfigMap.entrySet()) {
+            ModelConfig modelConfig = configEntry.getValue();
+            ModelFields modelFields = modelConfig.getFields();
+            String modelCode = modelConfig.getCode();
+            String modelName = modelConfig.getName();
+            LinearLayout linearLayout = new LinearLayout(this);
+            linearLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            linearLayout.setGravity(Gravity.CENTER_HORIZONTAL);
+            linearLayout.setOrientation(LinearLayout.VERTICAL);
+            for (ModelField<?> modelField : modelFields.values()) {
+                if (Objects.equals("enable", modelField.getCode())) {
+                    continue;
+                }
+                View view = modelField.getView(this);
+                if (view != null) {
+                    linearLayout.addView(view);
                 }
             }
-        });
+            ScrollView scrollView = new ScrollView(this);
+            scrollView.addView(linearLayout);
+            viewPagerAdapter.addView(modelCode, modelName, scrollView);
+        }
+        new TabLayoutMediator(tabLayout, viewPager, ((tab, position) -> {
+            tab.setText(viewPagerAdapter.getModelName(position));
+        })).attach();
 
-        btnFillWateredFriendList.setOnClickListener(new View.OnClickListener() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
-            public void onClick(View view) {
-                sendItemsBroadcast("antForest", "fillWateredFriendList", null);
-                ToastUtil.show(ExtensionsActivity.this, "已发送填入请求，请在森林日志查看结果！");
+            public void handleOnBackPressed() {
+                save();
             }
         });
     }
 
-    private void sendItemsBroadcast(String type, String method, String data) {
-        Intent intent = new Intent("com.eg.android.AlipayGphone.sesame.rpctest");
-        intent.putExtra("type", type);
-        intent.putExtra("method", method);
-        intent.putExtra("data", data);
-        sendBroadcast(intent);
+    public void save() {
+        if (!ExtensionsConfig.isModify()) {
+            finish();
+            return;
+        }
+        AlertDialogBuilder.getAlertDialogBuilder(this, "修改配置", "配置文件发生改变，确认要保存吗？")
+                .setPositiveButton(R.string.ok, ((dialogInterface, i) -> {
+                    ExtensionsConfig.save(false);
+                    finish();
+                }))
+                .setNegativeButton(R.string.cancel, (dialogInterface, i) -> finish())
+                .create()
+                .show();
+    }
+
+    public static ExtensionsActivity getInstance(Context context) {
+        while (context instanceof ContextWrapper) {
+            if (context instanceof ExtensionsActivity) {
+                return (ExtensionsActivity) context;
+            }
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        return null;
     }
 }

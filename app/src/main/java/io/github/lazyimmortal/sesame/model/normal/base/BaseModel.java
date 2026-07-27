@@ -1,19 +1,6 @@
 package io.github.lazyimmortal.sesame.model.normal.base;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
-
-import io.github.lazyimmortal.sesame.data.modelFieldExt.SelectAndCountModelField;
-import io.github.lazyimmortal.sesame.data.modelFieldExt.SelectModelField;
-import io.github.lazyimmortal.sesame.entity.AlipayrpcRequest;
-import io.github.lazyimmortal.sesame.hook.ApplicationHook;
-import io.github.lazyimmortal.sesame.model.task.antForest.AntForestRpcCall;
-import lombok.Getter;
 
 import io.github.lazyimmortal.sesame.data.Model;
 import io.github.lazyimmortal.sesame.data.ModelFields;
@@ -22,15 +9,28 @@ import io.github.lazyimmortal.sesame.data.modelFieldExt.BooleanModelField;
 import io.github.lazyimmortal.sesame.data.modelFieldExt.ChoiceModelField;
 import io.github.lazyimmortal.sesame.data.modelFieldExt.IntegerModelField;
 import io.github.lazyimmortal.sesame.data.modelFieldExt.ListModelField;
+import io.github.lazyimmortal.sesame.data.modelFieldExt.SelectModelField;
+import io.github.lazyimmortal.sesame.data.modelFieldExt.SelectOneModelField;
+import io.github.lazyimmortal.sesame.entity.idAndName.CustomOption;
 import io.github.lazyimmortal.sesame.model.task.protectEcology.ProtectEcology;
-import io.github.lazyimmortal.sesame.util.*;
-import io.github.lazyimmortal.sesame.util.idMap.*;
+import io.github.lazyimmortal.sesame.util.ListUtil;
+import io.github.lazyimmortal.sesame.util.Log;
+import io.github.lazyimmortal.sesame.util.ThreadUtil;
+import io.github.lazyimmortal.sesame.util.TimeUtil;
+import io.github.lazyimmortal.sesame.util.idMap.AnimalIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.BeachIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.MarathonIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.NewAncientTreeIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.ReserveIdMap;
+import io.github.lazyimmortal.sesame.util.idMap.TreeIdMap;
+import lombok.Getter;
 
 /**
  * 基础配置模块
  */
 public class BaseModel extends Model {
-     @Getter
+
+    @Getter
     private static final BooleanModelField stayAwake = new BooleanModelField("stayAwake", "保持唤醒", true);
     @Getter
     private static final IntegerModelField.MultiplyIntegerModelField checkInterval = new IntegerModelField.MultiplyIntegerModelField("checkInterval", "执行间隔(分钟)", 50, 1, 12 * 60, 60_000);
@@ -47,51 +47,38 @@ public class BaseModel extends Model {
     @Getter
     private static final IntegerModelField.MultiplyIntegerModelField waitWhenException = new IntegerModelField.MultiplyIntegerModelField("waitWhenException", "异常等待时间(分钟)", 60, 0, 24 * 60, 60_000);
     @Getter
-    public static final IntegerModelField backupConfigDays = new IntegerModelField("backupConfigDays", "按天和修改备份配置保存数(滚动覆盖)", 5);
-    @Getter
     private static final BooleanModelField newRpc = new BooleanModelField("newRpc", "使用新接口(最低支持v10.3.96.8100)", true);
     @Getter
     private static final BooleanModelField debugMode = new BooleanModelField("debugMode", "开启抓包(基于新接口)", false);
-    @Getter
-    private static final SelectAndCountModelField rpcRequestList = new SelectAndCountModelField("rpcRequestList", "RPC请求列表及每日执行数(慎用)", new LinkedHashMap<>(), AlipayrpcRequest::getList, "请填写每日执行次数");
-    @Getter
-    private static final SelectModelField rpcRequestTaskList= new SelectModelField("rpcRequestTaskList", "RPC可选任务列表(长按列表中的项仅移除用，内容需打开rpcResquest.json文件配置)", new LinkedHashSet<>(), AlipayrpcRequest::getList,"长按删除RPC列表项用");
     @Getter
     private static final BooleanModelField batteryPerm = new BooleanModelField("batteryPerm", "为支付宝申请后台运行权限", true);
     @Getter
     private static final BooleanModelField recordLog = new BooleanModelField("recordLog", "记录日志", true);
     @Getter
     private static final BooleanModelField showToast = new BooleanModelField("showToast", "气泡提示", true);
-    //public static final BooleanModelField closeCaptchaDialogVPN = new BooleanModelField("closeCaptchaDialogVPN", "关闭请检查是否使用了代理软件或VPN", false);
     @Getter
     private static final IntegerModelField toastOffsetY = new IntegerModelField("toastOffsetY", "气泡纵向偏移", 0);
     @Getter
-    private static final BooleanModelField enableOnGoing = new BooleanModelField("enableOnGoing", "开启状态栏禁删", false);
-    
+    private static final BooleanModelField sendNotification = new BooleanModelField("sendNotification", "发送通知 | 开启", false);
+    @Getter
+    private static final SelectModelField sendNotificationOptions = new SelectModelField("sendNotificationOptions", "发送通知 | 选项", new LinkedHashSet<>(), SendNotificationOption.class);
+    private static final SelectOneModelField blockCaptchaDialogOptions = new SelectOneModelField("blockCaptchaDialogOptions", "屏蔽弹窗 | 选项", null, CaptchaDialogOption.class);
+
     @Override
     public String getName() {
         return "基础";
     }
-    
+
     @Override
     public ModelGroup getGroup() {
         return ModelGroup.BASE;
     }
-    
+
     @Override
     public String getEnableFieldName() {
         return "启用模块";
     }
-    
-    public void boot(ClassLoader classLoader) {
-        /*// 配置已加载，更新验证码Hook状态
-        try {
-            CaptchaHook.updateHooks(closeCaptchaDialogVPN.getValue());
-            Log.record("✅ 验证码Hook配置已同步");
-        } catch (Throwable t) {
-            Log.printStackTrace("❌ 验证码Hook配置同步失败", t);
-        }*/
-    }
+
     @Override
     public ModelFields getFields() {
         ModelFields modelFields = new ModelFields();
@@ -102,128 +89,101 @@ public class BaseModel extends Model {
         modelFields.addField(energyTime);
         modelFields.addField(timedTaskModel);
         modelFields.addField(timeoutRestart);
-        modelFields.addField(backupConfigDays);
-        modelFields.addField(newRpc);
+        modelFields.addField(waitWhenException);
         modelFields.addField(newRpc);
         modelFields.addField(debugMode);
-        modelFields.addField(rpcRequestList);
-        modelFields.addField(rpcRequestTaskList);
         modelFields.addField(batteryPerm);
         modelFields.addField(recordLog);
         modelFields.addField(showToast);
-        //modelFields.addField(closeCaptchaDialogVPN);
-        modelFields.addField(enableOnGoing);
+        modelFields.addField(sendNotification);
+        modelFields.addField(sendNotificationOptions);
         modelFields.addField(toastOffsetY);
+        modelFields.addField(blockCaptchaDialogOptions);
         return modelFields;
     }
-    
+
+    public static long getNextRunTime() {
+        return BaseModel.waitWhenException.getValue() + System.currentTimeMillis();
+    }
+
+    public static int getBlockCaptchaDialogMode() {
+        if (blockCaptchaDialogOptions.contains(CaptchaDialogOption.NORMAL_CAPTCHA_DIALOG.name())) {
+            return 1;
+        } else if (blockCaptchaDialogOptions.contains(CaptchaDialogOption.SLIDE_CAPTCHA_DIALOG.name())) {
+            return 2;
+        } else {
+            return 0;
+        }
+    }
+
+
     public static void initData() {
-        new Thread(() -> {
+        ThreadUtil.start(() -> {
             try {
                 TimeUtil.sleep(5000);
                 ProtectEcology.initForest();
                 ProtectEcology.initOcean();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Log.printStackTrace(e);
             }
-        }).start();
+        });
     }
-    
-    //public static boolean getcloseCaptchaDialogVPN() {
-    //    return closeCaptchaDialogVPN.getValue();
-    //}
-    
+
     public static void destroyData() {
         try {
-            TreeIdMap.clear();
-            ReserveIdMap.clear();
-            AnimalIdMap.clear();
-            MarathonIdMap.clear();
-            NewAncientTreeIdMap.clear();
-            BeachIdMap.clear();
-            PlantSceneIdMap.clear();
-            ForestHuntIdMap.clear();
-            MemberCreditSesameTaskListMap.clear();
-            AntForestVitalityTaskListMap.clear();
-            AntForestHuntTaskListMap.clear();
-            AntFarmDoFarmTaskListMap.clear();
-            AntFarmDrawMachineTaskListMap.clear();
-            AntDodoTaskListMap.clear();
-            AntOceanAntiepTaskListMap.clear();
-            AntOceanFishBlackListMap.clear();
-            AntOrchardTaskListMap.clear();
-            AntStallTaskListMap.clear();
-            AntSportsTaskListMap.clear();
-            AntMemberTaskListMap.clear();
-        }
-        catch (Exception e) {
+            TreeIdMap.getInstance().clear();
+            ReserveIdMap.getInstance().clear();
+            AnimalIdMap.getInstance().clear();
+            MarathonIdMap.getInstance().clear();
+            NewAncientTreeIdMap.getInstance().clear();
+            BeachIdMap.getInstance().clear();
+        } catch (Exception e) {
             Log.printStackTrace(e);
         }
     }
-    
+
     public interface TimedTaskModel {
-        
+
         int SYSTEM = 0;
-        
+
         int PROGRAM = 1;
-        
+
         String[] nickNames = {"系统计时", "程序计时"};
-        
+
     }
-    
-    public static void initRpcRequest() {
-        rpcRequestMap.load();
-        rpcRequestMap.add("{\"methodName\":\"alipay.antforest.forest.h5.queryMiscInfo\",\"requestData\":[{\"queryBizType\":\"usingProp\",\"source\":\"SELF_HOME\",\"version\":\"20240201\"}]}", "查询森林使用道具(示例)");
-        rpcRequestMap.add("{\"methodName\":\"alipay.antforest.forest.h5.updateUserConfig\",\"requestData\":[{\"configMap\":{\"inTeam\":\"Y\"},\"source\":\"chInfo_ch_appcenter__chsub_9patch\"}]}", "切换到组队浇水(示例)");
-        rpcRequestMap.add("{\"methodName\":\"alipay.antforest.forest.h5.updateUserConfig\",\"requestData\":[{\"configMap\":{\"inTeam\":\"N\"},\"source\":\"chInfo_ch_appcenter__chsub_9patch\"}]}", "切换到个人主页(示例)");
-        
-        rpcRequestMap.save();
-        
-    }
-    public static void taskRpcRequest() {
-        
-        // 1. 获取Map集合，增加空判断避免NPE
-        Map<String, Integer> taskRpcList = rpcRequestList.getValue();
-        if (taskRpcList == null || taskRpcList.isEmpty()) {
-            // 集合为空时直接返回，避免无效遍历
-            return;
+
+    public enum SendNotificationOption implements CustomOption {
+        SEND_ERROR_NOTIFICATION("发送请求异常通知"),
+        SEND_RUNTIME_NOTIFICATION("发送任务运行通知"),
+        SEND_ONGOING_NOTIFICATION("通知常驻通知栏"),
+        REMOVE_NOTIFICATION_CHANNEL("移除过时通知频道(只会执行一次)");
+
+        private final String nickName;
+
+        SendNotificationOption(String nickName) {
+            this.nickName = nickName;
         }
-        // 2. 遍历Map的键值对
-        rpcRequestMap.load();
-        for (Map.Entry<String, Integer> taskRpc : taskRpcList.entrySet()) {
-            // 获取键（待解析的JSON字符串）和值（计数）
-            String taskRpcRequestMethodAndData = taskRpc.getKey();
-            Integer taskRpcCount = taskRpc.getValue();
-            String taskRpcName = rpcRequestMap.get(taskRpcRequestMethodAndData);
-            int taskRpcNameTodayCount = Status.getrpcRequestListToday(taskRpcName);
-            if (taskRpcNameTodayCount >= taskRpcCount) {
-                continue;
-            }
-            // 3. 解析JSON字符串，处理异常避免崩溃
-            JSONObject taskRpcJo = null;
-            try {
-                //保守执行，不管是否异常均认为执行
-                Status.rpcRequestListToday(taskRpcName, taskRpcNameTodayCount+1);
-                // 先判空，再解析JSON
-                if (taskRpcRequestMethodAndData == null || taskRpcRequestMethodAndData.isEmpty()) {
-                    continue; // 跳过空字符串，继续下一次遍历
-                }
-                taskRpcJo = new JSONObject(taskRpcRequestMethodAndData);
-                // 【可选】这里添加解析后的业务逻辑，比如获取JSON中的字段
-                String methodName = taskRpcJo.getString("methodName"); // 假设JSON中有method字段
-                String requestData = taskRpcJo.getString("requestData");     // 假设JSON中有data字段
-                Log.debug("自主调用🈸RPC["+taskRpcName+"]第" + (taskRpcNameTodayCount+1)+"["+taskRpcCount+"]次\n方法：" + methodName + "\n参数：" + requestData);
-                //调用接口执行请求
-                String taskRpcResult = ApplicationHook.requestString(methodName, requestData);
-                Log.debug("自主调用🈸RPC["+taskRpcName+"]返回\n数据：" + taskRpcResult);
-            }
-            catch (JSONException e) {
-                // 捕获JSON解析异常，打印日志而不是崩溃
-                e.printStackTrace();
-                // 可选：记录错误日志，或跳过当前无效的JSON字符串
-                Log.debug("JSON解析失败，字符串内容：" + taskRpcRequestMethodAndData);
-            }
+
+        @Override
+        public String nickName() {
+            return nickName;
         }
     }
+
+    public enum CaptchaDialogOption implements CustomOption {
+        NORMAL_CAPTCHA_DIALOG("普通验证"),
+        SLIDE_CAPTCHA_DIALOG("滑动验证");
+
+        private final String nickName;
+
+        CaptchaDialogOption(String nickName) {
+            this.nickName = nickName;
+        }
+
+        @Override
+        public String nickName() {
+            return nickName;
+        }
+        }
+
 }

@@ -211,7 +211,7 @@ video {
 }
 
 .main-color{
-  color: #216eee!important;
+  color: #07ab88!important;
 }
 
 .title {
@@ -221,13 +221,13 @@ video {
 }
 
 .link {
-  color: #216eee;
+  color: #07ab88;
   /* text-align: center; */
   height: 32px;
   /* width: 120px; */
   line-height: 32px;
   /* text-decoration: underline; */
-  /* border: 1px solid #216eee; */
+  /* border: 1px solid #07ab88; */
 }
 
 .flex {
@@ -257,74 +257,6 @@ video {
   justify-content: center;
   align-items: center;
 }
-
-.theme1 {
-  background-color: #f6f6f6;
-  padding: 0 10px !important; /* 底板离屏幕边框距离 保持不变 */
-}
-.theme1 .van-tabs__wrap::before {
-  position: fixed;
-  top: 0;
-  content: '';
-  height: 1px;
-  width: 100%;
-  background-color: #fff;
-}
-
-.theme1 .content-box {
-  width: calc(100vw - 40px) !important;
-  min-height: auto;
-  overflow-x: hidden;
-  overflow-y: auto;
-  margin: 10px auto !important;
-  padding: 6px 5px !important; /* 底板内间距 保持不变（与下拉内容间距统一） */
-  background-color: #ffffff;
-  box-sizing: border-box !important;
-}
-
-.theme1 .title-box {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 9px !important;
-  line-height: 46px !important;
-  min-height: 46px !important;
-}
-
-/* ✅ 核心微调：图标轻微向上偏移1px，和文字完美对齐（唯一改动） */
-.theme1 .list-icon {
-  width: 18px !important;
-  height: 18px !important;
-  color: #216eee;
-  display: inline-block !important;
-  transform: translateY(3px) !important; /* 图标向上1px，精准对齐文字 */
-  flex-shrink: 0;
-}
-
-.theme1 .list-label {
-  margin-top: 0 !important;
-  line-height: inherit !important;
-  font-size: 17px !important;
-}
-
-.theme1 .van-collapse-item__title {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  min-height: 46px !important;
-  line-height: 46px !important;
-  padding: 0 5px !important;
-}
-.theme1 .van-cell__right-icon,
-.theme1 .van-collapse-item__title .van-icon {
-  transform: none !important;
-  vertical-align: middle !important;
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px !important;
-}
-
 .theme2 {
   background-color: #f6f6f6;
 }
@@ -357,7 +289,7 @@ video {
 .theme2 .list-icon {
   width: 16px !important;
   height: 16px !important;
-  color: #216eee;
+  color: #07ab88;
   display: block;
   /* margin-top: 5px; */
   transform: translateY(5px) !important;
@@ -368,7 +300,7 @@ video {
 }
 
 .light-label {
-  color: #216eee;
+  color: #07ab88;
 }
 
 .dialog-footer-btn {
@@ -397,16 +329,13 @@ video {
 
 .dialog-list .van-checkbox__label {
   width: calc(100% - 10px) !important;
-  font-size: 14px !important; /* 减小复选框标签字体 */
 }
 
 .dialog-list .checked-label {
-  color: #216eee !important;
-  font-size: 14px !important; /* 减小选中标签字体 */
+  color: #07ab88 !important;
 }
 .dialog-list .list-label {
   width: calc(100% - 40px) !important;
-  font-size: 14px !important; /* 减小列表标签字体（核心修改） */
 }
 
 .dialog-list .van-checkbox__label--disabled {
@@ -415,15 +344,13 @@ video {
 
 .dialog-list .van-cell {
   padding-right: 5px !important;
-  font-size: 14px !important; /* 减小单元格整体字体 */
 }
 
 .check-all {
   padding-left: 12px;
-  font-size: 14px !important; /* 减小全选文字字体 */
 }
 .dialog-desc {
-  font-size: 12px !important; /* 减小描述文字字体（比正文更小） */
+  font-size: 14px;
   color: #9b9c9c;
 }
 
@@ -434,20 +361,15 @@ video {
   border-radius: 4px;
   line-height: 30px !important;
 }
-.dialog-list .van-field__control {
-  font-size: 14px !important; /* 减小输入框内文字字体 */
-}
 
 .dialog-list {
   padding:0 20px 0 12px;
   position: relative;
   border-top: 1px solid #f6f6f6;
-  font-size: 14px !important; /* 统一对话框列表基础字体 */
 }
 
 .dialog-list .dialog-list-item {
   padding: 5px 0;
-  font-size: 14px !important; /* 减小列表项每行字体 */
   }
 
   .dialog-list-item  .van-checkbox {
@@ -464,7 +386,6 @@ video {
   overflow-y: scroll;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
-  font-size: 14px !important; /* 减小滚动列表内容字体 */
 }
 .output-content-container {
   max-height: 70vh;

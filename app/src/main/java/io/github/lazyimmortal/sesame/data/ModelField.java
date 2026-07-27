@@ -1,13 +1,13 @@
 package io.github.lazyimmortal.sesame.data;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
-import androidx.core.content.ContextCompat;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -15,8 +15,9 @@ import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.Objects;
 
-import io.github.lazyimmortal.sesame.R;
+import io.github.lazyimmortal.sesame.util.ColorUtil;
 import io.github.lazyimmortal.sesame.util.JsonUtil;
+import io.github.lazyimmortal.sesame.util.StringUtil;
 import io.github.lazyimmortal.sesame.util.ToastUtil;
 import io.github.lazyimmortal.sesame.util.TypeUtil;
 import lombok.Data;
@@ -34,7 +35,7 @@ public class ModelField<T> implements Serializable {
     private String name;
 
     @JsonIgnore
-    private String description;
+    private CharSequence description;
 
     @JsonIgnore
     protected T defaultValue;
@@ -58,7 +59,7 @@ public class ModelField<T> implements Serializable {
         setObjectValue(value);
     }
 
-    public ModelField(String code, String name, T value, String description) {
+    public ModelField(String code, String name, T value, CharSequence description) {
         this();
         this.code = code;
         this.name = name;
@@ -105,7 +106,7 @@ public class ModelField<T> implements Serializable {
 
     @JsonIgnore
     public void setConfigValue(String configValue) {
-        if (configValue == null) {
+        if (StringUtil.isEmpty(configValue)) {
             reset();
             return;
         }
@@ -126,8 +127,6 @@ public class ModelField<T> implements Serializable {
         TextView btn = new TextView(context);
         btn.setText(getName());
         btn.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        btn.setTextColor(ContextCompat.getColor(context, R.color.button));
-        btn.setBackground(ContextCompat.getDrawable(context, R.drawable.button));
         btn.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         btn.setMinHeight(150);
         btn.setMaxHeight(180);
@@ -137,4 +136,11 @@ public class ModelField<T> implements Serializable {
         return btn;
     }
 
+    public CharSequence getText(View view, String title, String subTitle) {
+        subTitle = TextUtils.ellipsize(subTitle, ((Button) view).getPaint(), 1080, TextUtils.TruncateAt.END).toString();
+        return ColorUtil.getText(view.getContext(),
+                com.google.android.material.R.attr.colorOnPrimary, title,
+                com.google.android.material.R.attr.colorOnSecondary, subTitle
+        );
+    }
 }

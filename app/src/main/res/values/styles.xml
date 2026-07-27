@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="AppTheme" parent="@style/Theme.AppCompat.Light">
-        <!--Appbar背景色-->
+    <style name="MaterialYouLight"
+        parent="@style/Theme.Material3.DynamicColors.Light.NoActionBar">
+
+    </style>
+
+    <style name="MaterialYou" parent="@style/Theme.Material3.DynamicColors.DayNight.NoActionBar">
+    </style>
+
+
+    <style name="AppTheme" parent="@style/MaterialYou">
         <item name="colorPrimary">@color/colorPrimary</item>
-        <!--ToolBar上的Title颜色-->
-        <item name="titleTextColor">@color/textColorPrimary</item>
-        <item name="subtitleTextColor">#333333</item>
-        <item name="android:navigationBarColor">@color/colorPrimary</item>
-        <item name="android:statusBarColor">@color/colorPrimary</item>
-        <item name="windowNoTitle">true</item>
+        <item name="colorOnPrimary">@color/textColorPrimary</item>
     </style>
 
     <style name="MenuTheme">
-        <item name="android:textColorSecondary">@color/textColorPrimary</item>
+        <item name="android:textColorSecondary">?attr/colorOnPrimary</item>
     </style>
 </resources>

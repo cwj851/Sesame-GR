@@ -1,122 +1,106 @@
 package io.github.lazyimmortal.sesame.util;
 
 import android.content.Context;
+import android.os.Build;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.highcapable.yukihookapi.hook.xposed.application.ModuleApplication;
 
 import java.io.File;
+import java.text.DateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.Set;
 
 import io.github.lazyimmortal.sesame.R;
 import lombok.Data;
 
 @Data
 public class Statistics {
-    
+
     private static final String TAG = Statistics.class.getSimpleName();
-    
+
     public static final Statistics INSTANCE = new Statistics();
-    
+
+    // farm
+    private final Set<Question> questionSet = new HashSet<>();
+
+    private TimeStatistics total = new TimeStatistics();
     private TimeStatistics year = new TimeStatistics();
     private TimeStatistics month = new TimeStatistics();
     private TimeStatistics day = new TimeStatistics();
-    
-    public static void addData(DataType dt, int i) {
-        Statistics stat = INSTANCE;
-        switch (dt) {
-            case COLLECTED:
-                stat.day.collected += i;
-                stat.month.collected += i;
-                stat.year.collected += i;
-                break;
-            case HELPED:
-                stat.day.helped += i;
-                stat.month.helped += i;
-                stat.year.helped += i;
-                break;
-            case WATERED:
-                stat.day.watered += i;
-                stat.month.watered += i;
-                stat.year.watered += i;
-                break;
-            case WATEREDCOUNT:
-                stat.day.wateredcount += i;
-                stat.month.wateredcount += i;
-                stat.year.wateredcount += i;
-                break;
-            case WATERINGCOUNT:
-                stat.day.wateringcount += i;
-                stat.month.wateringcount += i;
-                stat.year.wateringcount += i;
-                break;
-        }
-    }
-    
-    public static int getData(TimeType tt, DataType dt) {
-        Statistics stat = INSTANCE;
-        int data = 0;
-        TimeStatistics ts = null;
-        switch (tt) {
-            case YEAR:
-                ts = stat.year;
-                break;
-            case MONTH:
-                ts = stat.month;
-                break;
-            case DAY:
-                ts = stat.day;
-                break;
-        }
-        if (ts != null) {
-            switch (dt) {
-                case TIME:
-                    data = ts.time;
-                    break;
-                case COLLECTED:
-                    data = ts.collected;
-                    break;
-                case HELPED:
-                    data = ts.helped;
-                    break;
-                case WATERED:
-                    data = ts.watered;
-                    break;
-                case WATEREDCOUNT:
-                    data = ts.wateredcount;
-                    break;
-                case WATERINGCOUNT:
-                    data = ts.wateringcount;
-                    break;
+
+    public static String getQuestionAnswer(String question) {
+        for (Question qa : INSTANCE.questionSet) {
+            if (Objects.equals(qa.question, question)) {
+                return qa.answer;
             }
         }
-        return data;
+        return null;
     }
-    
+
+    public static void saveQuestion(String question, String answer) {
+        Question newQuestion = new Question(TimeUtil.getDateStr(1), question, answer);
+        Set<Question> set = INSTANCE.questionSet;
+        if (!set.contains(newQuestion)) {
+            // 更新问题集合
+            set.add(newQuestion);
+            save();
+        }
+    }
+
+    public static void removeQuestion() {
+        // 移除过期问题
+        Set<Question> set = INSTANCE.questionSet;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            set.removeIf(Question::needRemove);
+        } else {
+            Iterator<Question> iterator = set.iterator();
+            while (iterator.hasNext()) {
+                if (iterator.next().needRemove()) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    public static void addData(DataType dataType, int i) {
+        Statistics stat = INSTANCE;
+        stat.total.addData(dataType, i);
+        stat.day.addData(dataType, i);
+        stat.month.addData(dataType, i);
+        stat.year.addData(dataType, i);
+    }
+
+    public static int getData(TimeType timeType, DataType dataType) {
+        TimeStatistics timeStatistics = null;
+        if (timeType == TimeType.TOTAL) {
+            timeStatistics = INSTANCE.total;
+        } else if (timeType == TimeType.YEAR) {
+            timeStatistics = INSTANCE.year;
+        } else if (timeType == TimeType.MONTH) {
+            timeStatistics = INSTANCE.month;
+        } else if (timeType == TimeType.DAY) {
+            timeStatistics = INSTANCE.day;
+        }
+        if (timeStatistics == null) {
+            return 0;
+        }
+        return timeStatistics.getData(dataType);
+    }
+
     public static String getText() {
-        
-        StringBuilder table = new StringBuilder();
         // 添加表头
-        table.append("今年  收: ").append(getData(TimeType.YEAR, DataType.COLLECTED)).append(" 帮: ").append(getData(TimeType.YEAR, DataType.HELPED)).append(" 浇: ").append(getData(TimeType.YEAR, DataType.WATERED));
-        table.append("\n今月  收: ").append(getData(TimeType.MONTH, DataType.COLLECTED)).append(" 帮: ").append(getData(TimeType.MONTH, DataType.HELPED)).append(" 浇: ").append(getData(TimeType.MONTH, DataType.WATERED));
-        table.append("\n今日  收: ").append(getData(TimeType.DAY, DataType.COLLECTED)).append(" 帮: ").append(getData(TimeType.DAY, DataType.HELPED)).append(" 浇: ").append(getData(TimeType.DAY, DataType.WATERED));
-        table.append("\n被水次数  日: ").append(getData(TimeType.DAY, DataType.WATEREDCOUNT)).append(" 月: ").append(getData(TimeType.MONTH, DataType.WATEREDCOUNT)).append(" 年: ").append(getData(TimeType.YEAR, DataType.WATEREDCOUNT));
-        table.append("\n浇水次数  日: ").append(getData(TimeType.DAY, DataType.WATERINGCOUNT)).append(" 月: ").append(getData(TimeType.MONTH, DataType.WATERINGCOUNT)).append(" 年: ").append(getData(TimeType.YEAR, DataType.WATERINGCOUNT));
-        return table.toString();
+        Context context = ModuleApplication.Companion.getAppContext();
+        return context.getText(R.string.total) + "  " + INSTANCE.total.makeText() + "\n" +
+                context.getText(R.string.year) + "  " + INSTANCE.year.makeText() + "\n" +
+                context.getText(R.string.month) + "  " + INSTANCE.month.makeText() + "\n" +
+                context.getText(R.string.day) + "  " + INSTANCE.day.makeText();
     }
-    
-    public static String getText(Context context) {
-        return getText(context.getString(R.string.year), context.getString(R.string.month), context.getString(R.string.day), context.getString(R.string.collected), context.getString(R.string.helped), context.getString(R.string.watered), context.getString(R.string.wateredcount),
-                context.getString(R.string.wateringcount));
-    }
-    
-    public static String getText(String year, String month, String day, String collected, String helped, String watered, String wateredcount, String wateringcount) {
-        return year + "  " + collected + ": " + getData(TimeType.YEAR, DataType.COLLECTED) + " " + helped + ": " + getData(TimeType.YEAR, DataType.HELPED) + " " + watered + ": " + getData(TimeType.YEAR, DataType.WATERED) +
-               "\n" + month + "  " + collected + ": " + getData(TimeType.MONTH, DataType.COLLECTED) + " " + helped + ": " + getData(TimeType.MONTH, DataType.HELPED) + " " + watered + ": " + getData(TimeType.MONTH, DataType.WATERED) +
-               "\n" + day + "  " + collected + ": " + getData(TimeType.DAY, DataType.COLLECTED) + " " + helped + ": " + getData(TimeType.DAY, DataType.HELPED) + " " + watered + ": " + getData(TimeType.DAY, DataType.WATERED) +
-               "\n" + wateredcount + "  " + "日" + ": " + getData(TimeType.DAY, DataType.WATEREDCOUNT) + "; " + "月" + ": " + getData(TimeType.MONTH, DataType.WATEREDCOUNT) + ";  " + "年" + ": " + getData(TimeType.YEAR, DataType.WATEREDCOUNT) +
-               "\n" + wateringcount + "  " + "日" + ": " + getData(TimeType.DAY, DataType.WATERINGCOUNT) + ";  " + "月" + ": " + getData(TimeType.MONTH, DataType.WATERINGCOUNT) + ";  " + "年" + ": " + getData(TimeType.YEAR, DataType.WATERINGCOUNT);
-    }
-    
+
     public static synchronized Statistics load() {
         try {
             File statisticsFile = FileUtil.getStatisticsFile();
@@ -129,102 +113,176 @@ public class Statistics {
                     Log.system(TAG, "重新格式化 statistics.json");
                     FileUtil.write2File(formatted, statisticsFile);
                 }
-            }
-            else {
+            } else {
                 JsonUtil.copyMapper().updateValue(INSTANCE, new Statistics());
                 Log.i(TAG, "初始化 statistics.json");
                 Log.system(TAG, "初始化 statistics.json");
                 FileUtil.write2File(JsonUtil.toFormatJsonString(INSTANCE), statisticsFile);
             }
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             Log.printStackTrace(TAG, t);
             Log.i(TAG, "统计文件格式有误，已重置统计文件");
             Log.system(TAG, "统计文件格式有误，已重置统计文件");
             try {
                 JsonUtil.copyMapper().updateValue(INSTANCE, new Statistics());
                 FileUtil.write2File(JsonUtil.toFormatJsonString(INSTANCE), FileUtil.getStatisticsFile());
-            }
-            catch (JsonMappingException e) {
+            } catch (JsonMappingException e) {
                 Log.printStackTrace(TAG, e);
             }
         }
         return INSTANCE;
     }
-    
+
     public static synchronized void unload() {
         try {
             JsonUtil.copyMapper().updateValue(INSTANCE, new Statistics());
-        }
-        catch (JsonMappingException e) {
+        } catch (JsonMappingException e) {
             Log.printStackTrace(TAG, e);
         }
     }
-    
+
     public static synchronized void save() {
         save(Calendar.getInstance());
     }
-    
+
     public static synchronized void save(Calendar nowCalendar) {
         if (updateDay(nowCalendar)) {
             Log.system(TAG, "重置 statistics.json");
-        }
-        else {
+        } else {
             Log.system(TAG, "保存 statistics.json");
         }
         FileUtil.write2File(JsonUtil.toFormatJsonString(INSTANCE), FileUtil.getStatisticsFile());
     }
-    
+
     public static Boolean updateDay(Calendar nowCalendar) {
-        int ye = nowCalendar.get(Calendar.YEAR);
-        int mo = nowCalendar.get(Calendar.MONTH) + 1;
-        int da = nowCalendar.get(Calendar.DAY_OF_MONTH);
-        if (ye != INSTANCE.year.time) {
-            INSTANCE.year.reset(ye);
-            INSTANCE.month.reset(mo);
-            INSTANCE.day.reset(da);
+        int year = nowCalendar.get(Calendar.YEAR);
+        int month = nowCalendar.get(Calendar.MONTH) + 1;
+        int day = nowCalendar.get(Calendar.DAY_OF_MONTH);
+        if (INSTANCE.total.time == 0) {
+            INSTANCE.total.reset(INSTANCE.year.time);
+            INSTANCE.total.addData(DataType.COLLECTED, INSTANCE.year.collected);
+            INSTANCE.total.addData(DataType.HELPED, INSTANCE.year.helped);
+            INSTANCE.total.addData(DataType.WATERED, INSTANCE.year.watered);
         }
-        else if (mo != INSTANCE.month.time) {
-            INSTANCE.month.reset(mo);
-            INSTANCE.day.reset(da);
-        }
-        else if (da != INSTANCE.day.time) {
-            INSTANCE.day.reset(da);
-        }
-        else {
+        if (year != INSTANCE.year.time) {
+            INSTANCE.year.reset(year);
+            INSTANCE.month.reset(month);
+            INSTANCE.day.reset(day);
+        } else if (month != INSTANCE.month.time) {
+            INSTANCE.month.reset(month);
+            INSTANCE.day.reset(day);
+        } else if (day != INSTANCE.day.time) {
+            INSTANCE.day.reset(day);
+        } else {
             return false;
         }
+        removeQuestion();
         return true;
     }
-    
+
     public enum TimeType {
-        YEAR, MONTH, DAY
+        TOTAL, YEAR, MONTH, DAY
     }
-    
+
     public enum DataType {
-        TIME, COLLECTED, HELPED, WATERED, WATEREDCOUNT, WATERINGCOUNT
+        TIME, COLLECTED, HELPED, WATERED
     }
-    
+
     @Data
     public static class TimeStatistics {
         int time;
-        int collected, helped, watered, wateredcount, wateringcount;
-        
+        int collected, helped, watered;
+
         public TimeStatistics() {
         }
-        
+
         TimeStatistics(int i) {
             reset(i);
         }
-        
+
         public void reset(int i) {
             time = i;
             collected = 0;
             helped = 0;
             watered = 0;
-            wateredcount = 0;
-            wateringcount = 0;
+        }
+
+        public void addData(DataType dataType, int i) {
+            switch (dataType) {
+                case COLLECTED -> collected += i;
+                case HELPED -> helped += i;
+                case WATERED -> watered += i;
+            }
+        }
+
+        public int getData(DataType dataType) {
+            if (dataType == DataType.TIME) {
+                return time;
+            } else if (dataType == DataType.COLLECTED) {
+                return collected;
+            } else if (dataType == DataType.HELPED) {
+                return helped;
+            } else if (dataType == DataType.WATERED) {
+                return watered;
+            } else {
+                return 0;
+            }
+        }
+
+        public String makeText() {
+            Context context = ModuleApplication.Companion.getAppContext();
+            return context.getText(R.string.collected) + ": " + collected + " " +
+                    context.getText(R.string.helped) + ": " + helped + " " +
+                    context.getText(R.string.watered) + ": " + watered;
         }
     }
-    
+
+    @Data
+    public static class Question {
+        private final String date;
+        private final String question;
+        private final String answer;
+
+        public Question() {
+            date = question = answer = null;
+        }
+
+        public Question(String date, String question, String answer) {
+            this.date = date;
+            this.question = question;
+            this.answer = answer;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(date, question, answer);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) {
+                return true;
+            }
+            if (obj instanceof Question questionObj) {
+                return Objects.equals(questionObj.date, date)
+                        && Objects.equals(questionObj.question, question)
+                        && Objects.equals(questionObj.answer, answer);
+            }
+            return false;
+        }
+
+        private boolean needRemove() {
+            if (date != null) {
+                try {
+                    Date parseDate = DateFormat.getDateInstance().parse(date);
+                    if (parseDate != null) {
+                        return TimeUtil.isLessThanNowOfDays(parseDate.getTime());
+                    }
+                } catch (Exception e) {
+                    Log.printStackTrace(e);
+                }
+            }
+            return true;
+        }
+    }
 }

@@ -18,7 +18,7 @@ public class ModelFieldShowDto implements Serializable {
 
     private String configValue;
 
-    private String description;
+    private CharSequence description;
 
     public ModelFieldShowDto() {
     }

@@ -112,8 +112,7 @@ public abstract class Model {
         for (int i = 0, len = modelClazzList.size(); i < len; i++) {
             Class<? extends Model> modelClazz = modelClazzList.get(i);
             try {
-                Constructor<? extends Model> constructor = modelClazz.getConstructor();
-                Model model = constructor.newInstance();
+                Model model = modelClazz.getConstructor().newInstance();
                 ModelConfig modelConfig = new ModelConfig(model);
                 modelArray[i] = model;
                 modelMap.put(modelClazz, model);

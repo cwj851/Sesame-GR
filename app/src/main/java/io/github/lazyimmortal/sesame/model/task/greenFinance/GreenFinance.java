@@ -2,6 +2,13 @@ package io.github.lazyimmortal.sesame.model.task.greenFinance;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TreeMap;
+
 import io.github.lazyimmortal.sesame.data.ModelFields;
 import io.github.lazyimmortal.sesame.data.ModelGroup;
 import io.github.lazyimmortal.sesame.data.modelFieldExt.BooleanModelField;
@@ -9,14 +16,11 @@ import io.github.lazyimmortal.sesame.data.task.ModelTask;
 import io.github.lazyimmortal.sesame.model.base.TaskCommon;
 import io.github.lazyimmortal.sesame.util.JsonUtil;
 import io.github.lazyimmortal.sesame.util.Log;
+import io.github.lazyimmortal.sesame.util.MessageUtil;
+import io.github.lazyimmortal.sesame.util.NotificationUtil;
 import io.github.lazyimmortal.sesame.util.Status;
+import io.github.lazyimmortal.sesame.util.StringUtil;
 import io.github.lazyimmortal.sesame.util.TimeUtil;
-
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TreeMap;
 
 /**
  * @author Constanline
@@ -38,7 +42,7 @@ public class GreenFinance extends ModelTask {
 
     @Override
     public String getName() {
-        return "经营";
+        return "绿色经营";
     }
 
     @Override
@@ -62,65 +66,81 @@ public class GreenFinance extends ModelTask {
     @Override
     public Boolean check() {
         if (TaskCommon.IS_ENERGY_TIME) {
-            Log.other("任务暂停⏸️绿色经营:当前为仅收能量时间");
+            Log.other("任务暂停⏸️绿色经营:当前为只收能量时间");
             return false;
         }
         return true;
     }
 
     @Override
-    public void  run() {
-        String s = GreenFinanceRpcCall.greenFinanceIndex();
+    public void run() {
         try {
-            JSONObject jo = new JSONObject(s);
-            if (!jo.optBoolean("success")) {
-                Log.i(TAG, jo.optString("resultDesc"));
+            NotificationUtil.sendTaskNotification(this);
+            if (!indexV2()) {
                 return;
             }
-            JSONObject result = jo.getJSONObject("result");
-            if (!result.getBoolean("greenFinanceSigned")) {
-                Log.other("绿色经营📊未开通");
-                return;
+            signIn("PLAY102632271");
+//            signIn("PLAY102932217");
+            signIn("PLAY102232206");
+
+            if (TimeUtil.isNowAfterOrCompareTimeStr("0836")) {
+                //执行打卡
+                behaviorTick();
+                //收好友金币
+                batchStealFriend();
             }
-            JSONObject mcaGreenLeafResult = result.getJSONObject("mcaGreenLeafResult");
-            JSONArray greenLeafList = mcaGreenLeafResult.getJSONArray("greenLeafList");
-            String currentCode = "";
-            JSONArray bsnIds = new JSONArray();
-            for (int i = 0; i < greenLeafList.length(); i++) {
-                JSONObject greenLeaf = greenLeafList.getJSONObject(i);
-                String code = greenLeaf.getString("code");
-                if (currentCode.equals(code) || bsnIds.length() == 0) {
-                    bsnIds.put(greenLeaf.getString("bsnId"));
-                } else {
-                    batchSelfCollect(bsnIds);
-                    bsnIds = new JSONArray();
-                }
-            }
-            if (bsnIds.length() > 0) {
-                batchSelfCollect(bsnIds);
-            }
+            //捐助
+            donation();
+            //评级奖品
+            prizes();
+            //绿色经营
+            GreenFinanceRpcCall.doTask("AP13159535", TAG, "绿色经营📊");
         } catch (Throwable th) {
-            Log.i(TAG, "index err:");
+            Log.i(TAG, "start.run err:");
+            Log.printStackTrace(TAG, th);
+        } finally {
+            NotificationUtil.removeTaskNotification(this);
+        }
+    }
+
+    private Boolean indexV2() {
+        try {
+            JSONObject jo = new JSONObject(GreenFinanceRpcCall.greenFinanceIndex());
+            if (!MessageUtil.checkResponse(TAG, jo)) {
+                return false;
+            }
+            jo = jo.getJSONObject("result");
+            if (!jo.getBoolean("greenFinanceSigned")) {
+                Log.other("绿色经营📊未开通");
+                return false;
+            }
+            try {
+                jo = jo.getJSONObject("mcaGreenLeafResult");
+                JSONArray greenLeafList = jo.getJSONArray("greenLeafList");
+                JSONArray bsnIds = new JSONArray();
+                for (int i = 0; i < greenLeafList.length(); i++) {
+                    JSONObject greenLeaf = greenLeafList.getJSONObject(i);
+                    String code = greenLeaf.getString("code");
+                    if (StringUtil.isEmpty(code) || bsnIds.length() == 0) {
+                        bsnIds.put(greenLeaf.getString("bsnId"));
+                    } else {
+                        batchSelfCollect(bsnIds);
+                        bsnIds = new JSONArray();
+                    }
+                }
+                if (bsnIds.length() > 0) {
+                    batchSelfCollect(bsnIds);
+                }
+            } catch (Exception e) {
+                Log.i(TAG, "batchSelfCollect err:");
+                Log.printStackTrace(TAG, e);
+            }
+            return true;
+        } catch (Throwable th) {
+            Log.i(TAG, "indexV2 err:");
             Log.printStackTrace(TAG, th);
         }
-
-        signIn("PLAY102632271");
-//            signIn("PLAY102932217");
-        signIn("PLAY102232206");
-
-        if(TimeUtil.isNowAfterOrCompareTimeStr("0836")) {
-            //执行打卡
-            behaviorTick();
-            //收好友金币
-            batchStealFriend();
-        }
-        //捐助
-        donation();
-        //评级奖品
-        prizes();
-        //绿色经营
-        GreenFinanceRpcCall.doTask("AP13159535", TAG, "绿色经营📊");
-        TimeUtil.sleep(500);
+        return false;
     }
 
     /**

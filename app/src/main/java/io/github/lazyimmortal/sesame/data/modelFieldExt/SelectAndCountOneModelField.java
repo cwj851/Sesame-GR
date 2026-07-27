@@ -7,17 +7,16 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
-import androidx.core.content.ContextCompat;
-
-import io.github.lazyimmortal.sesame.R;
-import io.github.lazyimmortal.sesame.data.ModelField;
-import io.github.lazyimmortal.sesame.data.modelFieldExt.common.SelectModelFieldFunc;
-import io.github.lazyimmortal.sesame.entity.IdAndName;
-import io.github.lazyimmortal.sesame.entity.KVNode;
-import io.github.lazyimmortal.sesame.ui.ListDialog;
+import com.google.android.material.button.MaterialButton;
 
 import java.util.List;
 import java.util.Objects;
+
+import io.github.lazyimmortal.sesame.data.ModelField;
+import io.github.lazyimmortal.sesame.data.modelFieldExt.common.SelectModelFieldFunc;
+import io.github.lazyimmortal.sesame.entity.KVNode;
+import io.github.lazyimmortal.sesame.entity.idAndName.IdAndName;
+import io.github.lazyimmortal.sesame.ui.dialog.ModelFieldDialog;
 
 public class SelectAndCountOneModelField extends ModelField<KVNode<String, Integer>> implements SelectModelFieldFunc {
 
@@ -46,17 +45,26 @@ public class SelectAndCountOneModelField extends ModelField<KVNode<String, Integ
 
     @Override
     public View getView(Context context) {
-        Button btn = new Button(context);
-        btn.setText(getName());
+        Button btn = new MaterialButton(context);
+        btn.setText(getText(btn, getName(), getSubTitle()));
         btn.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        btn.setTextColor(ContextCompat.getColor(context, R.color.button));
-        btn.setBackground(ContextCompat.getDrawable(context, R.drawable.button));
         btn.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         btn.setMinHeight(150);
         btn.setPaddingRelative(40, 0, 40, 0);
         btn.setAllCaps(false);
-        btn.setOnClickListener(v -> ListDialog.show(v.getContext(), ((Button) v).getText(), this, ListDialog.ListType.RADIO));
+        btn.setOnClickListener(v -> ModelFieldDialog.show(v.getContext(), this, (c, m) -> btn.setText(getText(btn, getName(), getSubTitle()))));
         return btn;
+    }
+
+    private String getSubTitle() {
+        String subTitle = "已设:" + getConfigValue();
+        for (IdAndName item : getExpandValue()) {
+            if (contains(item.id)) {
+                subTitle = subTitle.replace(item.id, item.name);
+                break;
+            }
+        }
+        return subTitle;
     }
 
     @Override

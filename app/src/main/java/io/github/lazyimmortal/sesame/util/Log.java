@@ -104,6 +104,14 @@ public class Log {
                     .flattener(new PatternFlattener("{d HH:mm:ss.SSS} {m}"))
                     .build()).build();
 
+    private static final Logger chatLogger = XLog.tag("CHAT").printers(
+            new FilePrinter.Builder(FileUtil.LOG_DIRECTORY_FILE.getPath())
+                    .fileNameGenerator(new CustomDateFileNameGenerator("chat"))
+                    .backupStrategy(new NeverBackupStrategy())
+                    .cleanStrategy(new NeverCleanStrategy())
+                    .flattener(new PatternFlattener("{d HH:mm:ss.SSS} {m}"))
+                    .build()).build();
+
     private static final Logger errorLogger = XLog.tag("ERROR").printers(
             new FilePrinter.Builder(FileUtil.LOG_DIRECTORY_FILE.getPath())
                     .fileNameGenerator(new CustomDateFileNameGenerator("error"))
@@ -151,6 +159,14 @@ public class Log {
         otherLogger.i(s);
     }
 
+    public static void chat(String s) {
+        chat("System", s);
+    }
+
+    public static void chat(String tag, String s) {
+        chatLogger.i(tag + ": " + s);
+    }
+
     public static void error(String s) {
         errorLogger.i(s);
         i(s);
@@ -173,7 +189,7 @@ public class Log {
         if (sdf == null) {
             sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         }
-        return logName + "." + sdf.format(new Date()) + ".log";
+        return logName + "_" + sdf.format(new Date()) + ".log";
     }
 
     public static String getFormatDateTime() {
@@ -242,7 +258,7 @@ public class Log {
             if (sdf == null) {
                 sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             }
-            return name + "." + sdf.format(new Date(timestamp)) + ".log";
+            return name + "_" + sdf.format(new Date(timestamp)) + ".log";
         }
     }
 

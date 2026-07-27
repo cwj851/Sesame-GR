@@ -1,12 +1,16 @@
 package io.github.lazyimmortal.sesame.util;
 
-import android.annotation.SuppressLint;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -14,9 +18,9 @@ import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 
-@SuppressLint("SimpleDateFormat")
 public class JsonUtil {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -33,7 +37,7 @@ public class JsonUtil {
         //属性为null不转换
         MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         MAPPER.setTimeZone(TimeZone.getDefault());
-        MAPPER.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
+        MAPPER.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()));
     }
 
     public static ObjectMapper copyMapper() {

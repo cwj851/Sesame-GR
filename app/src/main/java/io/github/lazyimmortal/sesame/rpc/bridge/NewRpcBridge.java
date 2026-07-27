@@ -1,5 +1,10 @@
 package io.github.lazyimmortal.sesame.rpc.bridge;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Map;
+
 import de.robv.android.xposed.XposedHelpers;
 import io.github.lazyimmortal.sesame.entity.RpcEntity;
 import io.github.lazyimmortal.sesame.hook.ApplicationHook;
@@ -9,11 +14,6 @@ import io.github.lazyimmortal.sesame.util.ClassUtil;
 import io.github.lazyimmortal.sesame.util.Log;
 import io.github.lazyimmortal.sesame.util.NotificationUtil;
 import io.github.lazyimmortal.sesame.util.RandomUtil;
-
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.Map;
 
 /**
  * 新版rpc接口 支持最低支付宝版本v10.3.96.8100
@@ -135,8 +135,7 @@ public class NewRpcBridge implements RpcBridge {
                                         try {
                                             Object obj = args[0];
                                             rpcEntity.setResponseObject(obj, (String) XposedHelpers.callMethod(obj, "toJSONString"));
-                                            if (!(Boolean) XposedHelpers.callMethod(obj, "containsKey", "success")
-                                                    && !(Boolean) XposedHelpers.callMethod(obj, "containsKey", "isSuccess")) {
+                                            if ((Boolean) XposedHelpers.callMethod(obj, "containsKey", "error")) {
                                                 rpcEntity.setError();
                                                 Log.error("new rpc response | id: " + rpcEntity.hashCode() + " | method: " + rpcEntity.getRequestMethod() + " args: " + rpcEntity.getRequestData() + " | data: " + rpcEntity.getResponseString());
                                             }
@@ -161,7 +160,7 @@ public class NewRpcBridge implements RpcBridge {
                         if ("2000".equals(errorCode)) {
                             if (!ApplicationHook.isOffline()) {
                                 ApplicationHook.setOffline(true);
-                                NotificationUtil.updateStatusText("登录超时");
+                                NotificationUtil.updateNotification("登录超时");
                                 if (BaseModel.getTimeoutRestart().getValue()) {
                                     Log.record("尝试重新登录");
                                     ApplicationHook.reLoginByBroadcast();
@@ -234,8 +233,7 @@ public class NewRpcBridge implements RpcBridge {
                                                     Object obj = innerArgs[0];
                                                     String result = (String) XposedHelpers.callMethod(obj, "toJSONString");
                                                     rpcEntity.setResponseObject(obj, result);
-                                                    if (!(Boolean) XposedHelpers.callMethod(obj, "containsKey", "success")
-                                                            && !(Boolean) XposedHelpers.callMethod(obj, "containsKey", "isSuccess")) {
+                                                    if ((Boolean) XposedHelpers.callMethod(obj, "containsKey", "error")) {
                                                         rpcEntity.setError();
                                                         Log.error("new rpc response | id: " + rpcEntity.hashCode() + " | method: " + rpcEntity.getRequestMethod() + " args: " + rpcEntity.getRequestData() + " | data: " + rpcEntity.getResponseString());
                                                     }
@@ -273,7 +271,7 @@ public class NewRpcBridge implements RpcBridge {
                         if ("2000".equals(errorCode)) {
                             if (!ApplicationHook.isOffline()) {
                                 ApplicationHook.setOffline(true);
-                                NotificationUtil.updateStatusText("登录超时");
+                                NotificationUtil.updateNotification("登录超时");
                                 if (BaseModel.getTimeoutRestart().getValue()) {
                                     Log.record("尝试重新登录");
                                     ApplicationHook.reLoginByBroadcast();

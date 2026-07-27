@@ -2,12 +2,17 @@ package io.github.lazyimmortal.sesame.data.task;
 
 import android.os.Build;
 import android.os.Handler;
-import io.github.lazyimmortal.sesame.hook.ApplicationHook;
-import io.github.lazyimmortal.sesame.util.Log;
-import io.github.lazyimmortal.sesame.util.ThreadUtil;
 
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import io.github.lazyimmortal.sesame.util.HandlerUtil;
+import io.github.lazyimmortal.sesame.util.Log;
+import io.github.lazyimmortal.sesame.util.ThreadUtil;
 
 public class SystemChildTaskExecutor implements ChildTaskExecutor {
 
@@ -16,7 +21,7 @@ public class SystemChildTaskExecutor implements ChildTaskExecutor {
     private final Map<String, ThreadPoolExecutor> groupChildTaskExecutorMap = new ConcurrentHashMap<>();
 
     public SystemChildTaskExecutor() {
-        handler = ApplicationHook.getMainHandler();
+        handler = HandlerUtil.getHandler();
     }
 
     @Override

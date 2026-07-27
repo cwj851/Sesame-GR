@@ -61,3 +61,5 @@ fastlane/readme.md
 
 Xposed-Modules-Repo/
 plugin/
+app/normal/
+cwj-1.keystore

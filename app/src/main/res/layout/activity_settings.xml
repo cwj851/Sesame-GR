@@ -15,25 +15,22 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:baselineAligned="false"
-                android:orientation="horizontal">
+                android:orientation="vertical">
 
-            <ScrollView
+            <HorizontalScrollView
                     android:id="@+id/sv_tabs"
-                    android:layout_weight="32"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:scrollbars="none">
 
                 <TabWidget
                         android:id="@android:id/tabs"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"/>
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
 
-            </ScrollView>
+            </HorizontalScrollView>
 
             <ScrollView
-                    android:layout_weight="10"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
 

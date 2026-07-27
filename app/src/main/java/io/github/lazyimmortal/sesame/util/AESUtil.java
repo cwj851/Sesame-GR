@@ -29,6 +29,7 @@ public class AESUtil {
 
     /**
      * 生成AES密钥
+     *
      * @return 生成的密钥
      * @throws Exception 异常
      */
@@ -40,6 +41,7 @@ public class AESUtil {
 
     /**
      * 将密钥转换为字符串形式
+     *
      * @param secretKey SecretKey 对象
      * @return Base64 编码的密钥字符串
      */
@@ -49,6 +51,7 @@ public class AESUtil {
 
     /**
      * 从字符串恢复密钥
+     *
      * @param keyString Base64 编码的密钥字符串
      * @return SecretKey 对象
      */
@@ -59,9 +62,10 @@ public class AESUtil {
 
     /**
      * AES加密
+     *
      * @param data 要加密的数据
-     * @param key 加密密钥
-     * @param iv 初始化向量 (IV)
+     * @param key  加密密钥
+     * @param iv   初始化向量 (IV)
      * @return 加密后的字符串（Base64 编码）
      * @throws Exception 异常
      */
@@ -75,9 +79,10 @@ public class AESUtil {
 
     /**
      * AES解密
+     *
      * @param encryptedData 要解密的数据（Base64 编码）
-     * @param key 解密密钥
-     * @param iv 初始化向量 (IV)
+     * @param key           解密密钥
+     * @param iv            初始化向量 (IV)
      * @return 解密后的字符串
      * @throws Exception 异常
      */
@@ -91,6 +96,7 @@ public class AESUtil {
     }
 
     public static native String encryptData(String data);
+
     private static String encryptData(String data, String key, String iv) {
         String result = null;
         try {
@@ -102,6 +108,7 @@ public class AESUtil {
     }
 
     public static native String decryptData(String data);
+
     private static String decryptData(String data, String key, String iv) {
         String result = null;
         try {
@@ -113,23 +120,26 @@ public class AESUtil {
     }
 
     public static String readZipFile(String zipFilePath, String filePath) {
-        try {
-            ZipFile zipFile = new ZipFile(zipFilePath);
+        // 手动验证路径，确保不包含 ".." 或以 "/" 开头
+        if (filePath == null || filePath.contains("..") || filePath.startsWith("/")) {
+            return null;
+        }
+        try (ZipFile zipFile = new ZipFile(zipFilePath)) {
             ZipEntry entry = zipFile.getEntry(filePath);
-            if (entry != null) {
-                InputStream inputStream = zipFile.getInputStream(entry);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+            if (entry == null || entry.getName().contains("..") || entry.getName().startsWith("/")) {
+                return null;
+            }
+            try (InputStream inputStream = zipFile.getInputStream(entry);
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                 StringBuilder content = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
                     content.append(line).append("\n");
                 }
-                reader.close();
-                inputStream.close();
                 return content.toString();
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            Log.printStackTrace(e);
         }
         return null;
     }

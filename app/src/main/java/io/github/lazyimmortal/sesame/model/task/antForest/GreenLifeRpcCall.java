@@ -12,17 +12,31 @@ public class GreenLifeRpcCall {
     }
 
     public static String sendEnergyByAction(String sourceType) {
-        String args = "[{\"actionType\":\"GOODS_BROWSE\",\"requestId\":\"" + RandomUtil.getRandomString(8) + "\"," +
-                "\"sourceType\":\"" + sourceType + "\"}]";
+        String args = "[{\"actionType\":\"GOODS_BROWSE\",\"requestId\":\"" + RandomUtil.getRandomString(8) + "\",\"sourceType\":\"" + sourceType + "\"}]";
         return ApplicationHook.requestString("alipay.bizfmcg.greenlife.sendEnergyByAction", args);
     }
 
     // 打卡兑好礼
+
+    public static String forestMarketLayoutQuery() {
+        String args = "[{\"aseChannelId\":\"FOREST_MARKET\",\"extInfo\":{\"accuracy\":57,\"altitude\":0,\"aseGlobalConfigPageId\":\"forest_market_config_page\",\"bearing\":0,\"venuePageId\":\"@alipay/green-goods-square/index\"},\"frontPageId\":\"@alipay/green-goods-square/index\"}]";
+        return ApplicationHook.requestString("com.alipay.forestmkt.ase.page.layout.query", args);
+    }
+
+    public static String signInStatusQuery(String playId) {
+        String args = "[{\"needQueryCount\":true,\"playId\":\""+playId+"\"}]";
+        return ApplicationHook.requestString("com.alipay.forestmkt.signIn.statusQuery", args);
+    }
+
+    public static String signInTrigger(String playId) {
+        String args = "[{\"playId\":\""+playId+"\"}]";
+        return ApplicationHook.requestString("com.alipay.forestmkt.signIn.trigger", args);
+    }
     public static String retrieveCurrentActivity() {
         String args = "[{}]";
         return ApplicationHook.requestString("alipay.bizfmcg.greenlife.retrieveCurrentActivity", args);
     }
-
+    
     public static String retrieveHotActivityPrize(String activityId) {
         String args = "[{\"activityId\":\"" + activityId + "\"}]";
         return ApplicationHook.requestString("alipay.bizfmcg.greenlife.retrieveHotActivityPrize", args);

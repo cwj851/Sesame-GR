@@ -11,6 +11,7 @@ import io.github.lazyimmortal.sesame.util.Log;
 import io.github.lazyimmortal.sesame.util.RandomUtil;
 import io.github.lazyimmortal.sesame.util.StringUtil;
 
+@Deprecated
 public class AntBookRead extends ModelTask {
     private static final String TAG = AntBookRead.class.getSimpleName();
 

@@ -1,23 +1,21 @@
 package io.github.lazyimmortal.sesame.data;
 
-import android.annotation.SuppressLint;
-import android.app.Application;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import lombok.Data;
+
+import java.io.File;
+
 import io.github.lazyimmortal.sesame.util.FileUtil;
 import io.github.lazyimmortal.sesame.util.JsonUtil;
 import io.github.lazyimmortal.sesame.util.Log;
-
-import java.io.File;
+import lombok.Data;
 
 @Data
 public class AppConfig {
 
     private static final String TAG = AppConfig.class.getSimpleName();
 
-    private static final File APP_CONFIG_DIRECTORY_FILE = getExternalFilesDir();
+    private static final File APP_CONFIG_DIRECTORY_FILE = FileUtil.MAIN_DIRECTORY_FILE;
 
     public static final AppConfig INSTANCE = new AppConfig();
 
@@ -26,19 +24,7 @@ public class AppConfig {
 
     private Boolean newUI = true;
     private Boolean languageSimplifiedChinese = true;
-
-    private static File getExternalFilesDir() {
-        try {
-            @SuppressLint("PrivateApi")
-            Application application = (Application) Class.forName("android.app.ActivityThread").getMethod("currentApplication").invoke(null);
-            if (application != null) {
-                return application.getExternalFilesDir("Sesame");
-            }
-        } catch (Exception e) {
-            Log.printStackTrace(TAG, e);
-        }
-        return null;
-    }
+    private Boolean hideStatisticFile = false;
 
     public static Boolean save() {
         return FileUtil.write2File(toSaveStr(), new File(APP_CONFIG_DIRECTORY_FILE, "appConfig.json"));

@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="get_watered_items">Get watered items🍯</string>
-    <string name="get_watering_items">Get watering items🚿</string>
     <string name="get_tree_items">Get tree items🌱</string>
     <string name="get_newTree_items">Get newTree items🌱</string>
     <string name="query_area_trees">Query unlock area🗺️</string>
@@ -10,7 +8,6 @@
     <string name="set_custom_walk_path_id_list">Set custom walk pathId list🚶🏻‍♂️</string>
     <string name="set_custom_walk_path_id_queue">Set custom walk pathId queue🚶🏻‍♂️</string>
     <string name="developer_mode">Developer mode💻</string>
-    <string name="fill_watered_friend_list">Fill watered friend list📝</string>
 
     <string name="btn_add_custom_walk_path_id">Add</string>
     <string name="btn_clear_custom_walk_path_id_queue">Clear</string>

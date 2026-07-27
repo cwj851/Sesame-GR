@@ -1,13 +1,11 @@
 package io.github.lazyimmortal.sesame.util;
 
-import android.annotation.SuppressLint;
-
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Locale;
 
 /**
  * @author Constanline
@@ -195,6 +193,7 @@ public class TimeUtil {
 
     /**
      * 获取指定时间的周数
+     *
      * @param dateTime 时间
      * @return 当前年的第几周
      */
@@ -208,7 +207,8 @@ public class TimeUtil {
 
     /**
      * 比较第一个日历的天数小于第二个日历的天数
-     * @param firstCalendar 第一个日历
+     *
+     * @param firstCalendar  第一个日历
      * @param secondCalendar 第二个日历
      * @return Boolean 如果小于，则为true，否则为false
      */
@@ -220,7 +220,8 @@ public class TimeUtil {
 
     /**
      * 比较第一个时间戳的天数是否小于第二个时间戳的天数
-     * @param firstTimestamp 第一个时间戳
+     *
+     * @param firstTimestamp  第一个时间戳
      * @param secondTimestamp 第二个时间戳
      * @return Boolean 如果小于，则为true，否则为false
      */
@@ -232,6 +233,7 @@ public class TimeUtil {
 
     /**
      * 通过时间戳比较传入的时间戳的天数是否小于当前时间戳的天数
+     *
      * @param timestamp 时间戳
      * @return Boolean 如果小于当前时间戳所计算的天数，则为true，否则为false
      */
@@ -241,7 +243,8 @@ public class TimeUtil {
 
     /**
      * 判断两个日历对象是否为同一天
-     * @param firstCalendar 第一个日历对象
+     *
+     * @param firstCalendar  第一个日历对象
      * @param secondCalendar 第二个日历对象
      * @return 两个日历对象是否为同一天
      */
@@ -252,7 +255,8 @@ public class TimeUtil {
 
     /**
      * 判断两个时间戳是否为同一天
-     * @param firstTimestamp 第一个时间戳
+     *
+     * @param firstTimestamp  第一个时间戳
      * @param secondTimestamp 第二个时间戳
      * @return 两个时间戳是否为同一天
      */
@@ -264,6 +268,7 @@ public class TimeUtil {
 
     /**
      * 判断日历对象是否为今天
+     *
      * @param calendar 日历对象
      * @return 日历对象是否为今天
      */
@@ -273,6 +278,7 @@ public class TimeUtil {
 
     /**
      * 判断时间戳是否为今天
+     *
      * @param timestamp 时间戳
      * @return 时间戳是否为今天
      */
@@ -280,23 +286,19 @@ public class TimeUtil {
         return isToday(getCalendarByTimeMillis(timestamp));
     }
 
-    @SuppressLint("SimpleDateFormat")
     public static DateFormat getCommonDateFormat() {
-        return new SimpleDateFormat("dd日HH:mm:ss");
-    }
-    @SuppressLint("SimpleDateFormat")
-    public static DateFormat getCommonDateFormatS() {
-        return new SimpleDateFormat("dd日HHmmss");
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
     }
 
-    @SuppressLint("SimpleDateFormat")
-    public static String getCommonDate(Long timestamp) {
-        return getCommonDateFormat().format(timestamp);
+    public static String getCommonDateTime(Object object) {
+        return getCommonDateFormat().format(object);
     }
 
-    @SuppressLint("SimpleDateFormat")
-    public static String getCommonDateS(Long timestamp) {
-        return getCommonDateFormatS().format(timestamp);
+    public static String getCommonDate(Object object) {
+        return getCommonDateTime(object).split(" ")[0];
     }
 
+    public static String getCommonTime(Object object) {
+        return getCommonDateTime(object).split(" ")[1];
+    }
 }

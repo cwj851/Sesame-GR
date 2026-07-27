@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="send_rpc_request">发送Rpc请求📨</string>
+    <string name="view_debug_log">查看请求记录📝</string>
+    <string name="please_input_method">请输入方法</string>
+    <string name="please_input_data">请输入数据</string>
+
+    <string name="parse_give_prop_rds">解析赠送道具参数</string>
+    <string name="please_input_give_prop_request_data">请输入赠送道具的请求数据</string>
+</resources>

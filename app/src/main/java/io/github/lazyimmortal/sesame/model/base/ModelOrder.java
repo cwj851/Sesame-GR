@@ -17,6 +17,9 @@ import io.github.lazyimmortal.sesame.model.task.antSports.AntSports;
 import io.github.lazyimmortal.sesame.model.task.antStall.AntStall;
 import io.github.lazyimmortal.sesame.model.task.greenFinance.GreenFinance;
 import io.github.lazyimmortal.sesame.model.task.protectEcology.ProtectEcology;
+import io.github.lazyimmortal.sesame.rpc.request.Request;
+import io.github.lazyimmortal.sesame.rpc.request.RequestMethod;
+import io.github.lazyimmortal.sesame.rpc.request.RequestType;
 import lombok.Getter;
 
 public class ModelOrder {
@@ -38,6 +41,10 @@ public class ModelOrder {
         clazzList.add(GreenFinance.class);
         clazzList.add(AnswerAI.class);
 
-        ExtensionsHandle.handleAlphaRequest("ModelOrder", "addExtensionsClass", clazzList);
+        ExtensionsHandle.handleRequest(new Request(
+                RequestType.ENABLE_DEVELOPER_MODE,
+                RequestMethod.MODEL_ORDER_ADD_CLASS,
+                clazzList)
+        );
     }
 }

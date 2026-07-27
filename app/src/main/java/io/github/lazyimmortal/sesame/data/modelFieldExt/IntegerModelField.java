@@ -8,13 +8,13 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
-import androidx.core.content.ContextCompat;
+import com.google.android.material.button.MaterialButton;
 
-import lombok.Getter;
-import io.github.lazyimmortal.sesame.R;
 import io.github.lazyimmortal.sesame.data.ModelField;
-import io.github.lazyimmortal.sesame.ui.StringDialog;
+import io.github.lazyimmortal.sesame.ui.dialog.ModelFieldDialog;
 import io.github.lazyimmortal.sesame.util.Log;
+import io.github.lazyimmortal.sesame.util.StringUtil;
+import lombok.Getter;
 
 @Getter
 public class IntegerModelField extends ModelField<Integer> {
@@ -24,9 +24,7 @@ public class IntegerModelField extends ModelField<Integer> {
     protected final Integer maxLimit;
 
     public IntegerModelField(String code, String name, Integer value) {
-        super(code, name, value);
-        this.minLimit = null;
-        this.maxLimit = null;
+        this(code, name, value, null, null);
     }
 
     public IntegerModelField(String code, String name, Integer value, Integer minLimit, Integer maxLimit) {
@@ -47,39 +45,40 @@ public class IntegerModelField extends ModelField<Integer> {
 
     @Override
     public void setConfigValue(String configValue) {
-        Integer newValue;
-        if (configValue == null) {
-            newValue = defaultValue;
-        } else {
+        this.value = getNewValue(configValue, defaultValue);
+    }
+
+    public Integer getNewValue(String configValue, Integer defaultValue) {
+        Integer newValue = defaultValue;
+        if (!StringUtil.isEmpty(configValue)) {
             try {
                 newValue = Integer.parseInt(configValue);
+                if (minLimit != null) {
+                    newValue = Math.max(minLimit, newValue);
+                }
+                if (maxLimit != null) {
+                    newValue = Math.min(maxLimit, newValue);
+                }
             } catch (Exception e) {
                 Log.printStackTrace(e);
-                newValue = defaultValue;
             }
         }
-        if (minLimit != null) {
-            newValue = Math.max(minLimit, newValue);
-        }
-        if (maxLimit != null) {
-            newValue = Math.min(maxLimit, newValue);
-        }
-        this.value = newValue;
+        return newValue;
     }
 
     @Override
     public View getView(Context context) {
-        Button btn = new Button(context);
-        btn.setText(getName());
+        Button btn = new MaterialButton(context);
+        btn.setText(getText(btn, getName(), getConfigValue()));
         btn.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        btn.setTextColor(ContextCompat.getColor(context, R.color.button));
-        btn.setBackground(ContextCompat.getDrawable(context, R.drawable.button));
         btn.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         btn.setMinHeight(150);
         btn.setMaxHeight(180);
         btn.setPaddingRelative(40, 0, 40, 0);
         btn.setAllCaps(false);
-        btn.setOnClickListener(v -> StringDialog.showEditDialog(v.getContext(), ((Button) v).getText(), this));
+        btn.setOnClickListener(v -> ModelFieldDialog.show(v.getContext(), this,
+                (c, m) -> btn.setText(getText(btn, getName(), getConfigValue()))
+        ));
         return btn;
     }
 
@@ -100,25 +99,17 @@ public class IntegerModelField extends ModelField<Integer> {
 
         @Override
         public void setConfigValue(String configValue) {
-            if (configValue == null) {
-                reset();
-                return;
-            }
-            super.setConfigValue(configValue);
             try {
-                value = value * multiple;
-                return;
+                value = getNewValue(configValue, defaultValue / multiple) * multiple;
             } catch (Exception e) {
-                Log.printStackTrace(e);
+                reset();
             }
-            reset();
         }
 
         @Override
         public String getConfigValue() {
             return String.valueOf(value / multiple);
         }
-
     }
 
 }

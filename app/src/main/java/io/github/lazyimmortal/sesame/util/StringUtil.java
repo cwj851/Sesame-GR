@@ -5,8 +5,17 @@ import java.util.Iterator;
 import java.util.Objects;
 
 public class StringUtil {
-    public static boolean isEmpty(String str) {
-        return str == null || str.isEmpty();
+    public static boolean isEmpty(CharSequence cs) {
+        return cs == null || cs.length() == 0;
+    }
+
+    public static boolean hasEmpty(CharSequence... charSequences) {
+        for (CharSequence charSequence : charSequences) {
+            if (isEmpty(charSequence)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static String collectionJoinString(CharSequence conjunction, Collection<?> collection) {

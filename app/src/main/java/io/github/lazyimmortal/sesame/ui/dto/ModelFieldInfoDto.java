@@ -20,7 +20,7 @@ public class ModelFieldInfoDto implements Serializable {
 
     private String configValue;
 
-    private String description;
+    private CharSequence description;
 
     public ModelFieldInfoDto() {
     }

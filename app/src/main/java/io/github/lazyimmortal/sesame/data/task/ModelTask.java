@@ -1,27 +1,28 @@
 package io.github.lazyimmortal.sesame.data.task;
 
-import static io.github.lazyimmortal.sesame.model.normal.base.BaseModel.taskRpcRequest;
-
 import android.os.Build;
-
-import io.github.lazyimmortal.sesame.util.FileUtil;
-import io.github.lazyimmortal.sesame.util.Status;
-import io.github.lazyimmortal.sesame.util.idMap.UserIdMap;
-import lombok.Getter;
-import io.github.lazyimmortal.sesame.data.Model;
-import io.github.lazyimmortal.sesame.data.ModelFields;
-import io.github.lazyimmortal.sesame.data.ModelType;
-import io.github.lazyimmortal.sesame.model.normal.base.BaseModel;
-import io.github.lazyimmortal.sesame.util.Log;
-import io.github.lazyimmortal.sesame.util.StringUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import io.github.lazyimmortal.sesame.data.Model;
+import io.github.lazyimmortal.sesame.data.ModelFields;
+import io.github.lazyimmortal.sesame.data.ModelType;
+import io.github.lazyimmortal.sesame.hook.ApplicationHook;
+import io.github.lazyimmortal.sesame.model.extensions.backupRestore.BackupRestore;
+import io.github.lazyimmortal.sesame.model.normal.base.BaseModel;
+import io.github.lazyimmortal.sesame.util.Log;
+import io.github.lazyimmortal.sesame.util.StringUtil;
+import io.github.lazyimmortal.sesame.util.ThreadUtil;
+import lombok.Getter;
+
 public abstract class ModelTask extends Model {
+
+    private static CountDownLatch countDownLatch = new CountDownLatch(0);
 
     private static final Map<ModelTask, Thread> MAIN_TASK_MAP = new ConcurrentHashMap<>();
 
@@ -48,6 +49,7 @@ public abstract class ModelTask extends Model {
                 Log.printStackTrace(e);
             } finally {
                 MAIN_TASK_MAP.remove(task);
+                countDownLatch.countDown();
             }
         }
 
@@ -161,13 +163,14 @@ public abstract class ModelTask extends Model {
                 }
                 return true;
             }
+            countDownLatch.countDown();
         } catch (Exception e) {
             Log.printStackTrace(e);
         }
         return false;
     }
 
-    public synchronized void stopTask() {
+    public synchronized Boolean stopTask() {
         for (ChildModelTask childModelTask : childTaskMap.values()) {
             try {
                 childModelTask.cancel();
@@ -179,8 +182,8 @@ public abstract class ModelTask extends Model {
             childTaskExecutor.clearAllChildTask();
         }
         childTaskMap.clear();
-        MAIN_THREAD_POOL.remove(mainRunnable);
         MAIN_TASK_MAP.remove(this);
+        return MAIN_THREAD_POOL.remove(mainRunnable);
     }
 
     public static void startAllTask() {
@@ -188,23 +191,25 @@ public abstract class ModelTask extends Model {
     }
 
     public static void startAllTask(Boolean force) {
-        //自动触发备份配置文件
-        if (!Status.hasFlagToday("Config::backup")) {
-            FileUtil.backupConfigV2WithRolling(UserIdMap.getCurrentUid());
-            Status.flagToday("Config::backup");
-        }
-        //执行BaseModel中自定义执行请求
-        taskRpcRequest();
+        countDownLatch = new CountDownLatch(getModelArray().length);
+        ThreadUtil.start(() -> {
+            try {
+                countDownLatch.await();
+            } catch (InterruptedException e) {
+                Log.printStackTrace(e);
+            }
+            BackupRestore.autoBackup(ApplicationHook.getContext());
+        });
         for (Model model : getModelArray()) {
-            if (model != null) {
-                if (ModelType.TASK == model.getType()) {
-                    if (((ModelTask) model).startTask(force)) {
-                        try {
-                            Thread.sleep(750);
-                        } catch (InterruptedException e) {
-                            Log.printStackTrace(e);
-                        }
-                    }
+            if (model == null || ModelType.TASK != model.getType()) {
+                countDownLatch.countDown();
+                continue;
+            }
+            if (((ModelTask) model).startTask(force)) {
+                try {
+                    Thread.sleep(750);
+                } catch (InterruptedException e) {
+                    Log.printStackTrace(e);
                 }
             }
         }
@@ -215,12 +220,21 @@ public abstract class ModelTask extends Model {
             if (model != null) {
                 try {
                     if (ModelType.TASK == model.getType()) {
-                        ((ModelTask) model).stopTask();
+                        if (((ModelTask) model).stopTask()) {
+                            // 如果被提前从线程池中移除，标记任务已完成
+                            countDownLatch.countDown();
+                        }
                     }
                 } catch (Exception e) {
                     Log.printStackTrace(e);
                 }
             }
+        }
+        try {
+            // 等待全部任务结束
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            Log.printStackTrace(e);
         }
     }
 
