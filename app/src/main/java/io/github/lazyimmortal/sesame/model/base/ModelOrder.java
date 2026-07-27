@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.lazyimmortal.sesame.data.Model;
+import io.github.lazyimmortal.sesame.model.task.immortal.Immortal;
 import io.github.lazyimmortal.sesame.model.extensions.ExtensionsHandle;
 import io.github.lazyimmortal.sesame.model.normal.answerAI.AnswerAI;
 import io.github.lazyimmortal.sesame.model.normal.base.BaseModel;
@@ -36,6 +37,7 @@ public class ModelOrder {
         clazzList.add(AntSports.class);
         clazzList.add(AntMember.class);
         clazzList.add(GreenFinance.class);
+        clazzList.add(Immortal.class);
         clazzList.add(AnswerAI.class);
 
         ExtensionsHandle.handleAlphaRequest("ModelOrder", "addExtensionsClass", clazzList);

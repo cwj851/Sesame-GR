@@ -13,15 +13,18 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import org.json.JSONObject;
+
 public class FileUtil {
     private static final String TAG = FileUtil.class.getSimpleName();
     //路径
-    public static final String CONFIG_DIRECTORY_NAME = "sesame";
+    public static final String CONFIG_DIRECTORY_NAME = "SesameGR";
     public static final File MAIN_DIRECTORY_FILE = getMainDirectoryFile();
     public static final File CONFIG_DIRECTORY_FILE = getConfigDirectoryFile();
     public static final File LOG_DIRECTORY_FILE = getLogDirectoryFile();
     private static File cityCodeFile;
     private static File wuaFile;
+    private static File certCountDirectory;
     
     // 备份相关配置（可根据需求调整n值，比如n=3则A/B/C循环）
     private static int BACKUP_MAX_COUNT = 5; // 配置读取失败时的默认值
@@ -1052,5 +1055,39 @@ public class FileUtil {
             deleteFile(innerFile);
         }
         return file.delete();
+    }
+
+    public static File getCertCountDirectoryFile() {
+        if (certCountDirectory == null) {
+            certCountDirectory = new File(MAIN_DIRECTORY_FILE, "certCount");
+            if (certCountDirectory.exists()) {
+                if (certCountDirectory.isFile()) {
+                    certCountDirectory.delete();
+                    certCountDirectory.mkdirs();
+                }
+            } else {
+                certCountDirectory.mkdirs();
+            }
+        }
+        return certCountDirectory;
+    }
+
+    public static File getCertCountFile(String userId) {
+        File certCountFile = new File(getCertCountDirectoryFile(), "certCount-" + userId + ".json");
+        if (!certCountFile.exists()) {
+            JSONObject jo_certCount = new JSONObject();
+            write2File(jo_certCount.toString(), certCountFile);
+        }
+        return certCountFile;
+    }
+
+    public static void setCertCount(String userId, String dateString, int certCount) {
+        try {
+            File certCountFile = getCertCountFile(userId);
+            JSONObject jo_certCount = new JSONObject(readFromFile(certCountFile));
+            jo_certCount.put(dateString, Integer.toString(certCount));
+            write2File(jo_certCount.toString(2), certCountFile);
+        } catch (Throwable ignored) {
+        }
     }
 }

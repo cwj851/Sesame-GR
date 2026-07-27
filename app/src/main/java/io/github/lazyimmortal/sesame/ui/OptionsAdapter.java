@@ -29,6 +29,7 @@ public class OptionsAdapter extends BaseAdapter {
         list.add("查看森林");
         list.add("查看庄园");
         list.add("查看资料");
+        list.add("查询能量来源");
         list.add("删除");
     }
 

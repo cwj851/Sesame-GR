@@ -450,6 +450,18 @@ public class ListDialog {
                             
                             case 3:
                                 try {
+                                    Intent intent = new Intent("com.eg.android.AlipayGphone.sesame.rpctest");
+                                    intent.putExtra("type", "antForest");
+                                    intent.putExtra("method", "queryFriendEnergy");
+                                    intent.putExtra("data", curIdAndName.id);
+                                    c.sendBroadcast(intent);
+                                    ToastUtil.show(c, "已发送查询请求，请在森林日志查看结果！");
+                                } catch (Throwable ignored) {
+                                }
+                                break;
+                            
+                            case 4:
+                                try {
                                     new AlertDialog.Builder(c).setTitle("删除 " + curIdAndName.name).setPositiveButton(c.getString(R.string.ok), (dialog, which) -> {
                                         if (which == DialogInterface.BUTTON_POSITIVE) {
                                             if (curIdAndName instanceof AlipayUser) {

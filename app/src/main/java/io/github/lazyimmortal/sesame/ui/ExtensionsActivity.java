@@ -20,6 +20,7 @@ public class ExtensionsActivity extends BaseActivity {
     Button btnQueryAreaTrees, btnGetUnlockTreeItems;
     Button btnClearDishImage;
     Button btnSetCustomWalkPathId, btnSetCustomWalkPathIdQueue;
+    Button btnFetchRanking;
     Button btnDeveloperMode;
     Button btnFillWateredFriendList;
 
@@ -37,6 +38,7 @@ public class ExtensionsActivity extends BaseActivity {
         btnClearDishImage = findViewById(R.id.btn_clear_dish_image);
         btnSetCustomWalkPathId = findViewById(R.id.btn_set_custom_walk_path_id_list);
         btnSetCustomWalkPathIdQueue = findViewById(R.id.btn_set_custom_walk_path_id_queue);
+        btnFetchRanking = findViewById(R.id.btn_fetch_ranking);
         btnDeveloperMode = findViewById(R.id.btn_developer_mode);
         btnFillWateredFriendList = findViewById(R.id.btn_fill_watered_friend_list);
         
@@ -131,6 +133,14 @@ public class ExtensionsActivity extends BaseActivity {
                     }).setNegativeButton(getString(R.string.btn_clear_custom_walk_path_id_queue), (dialog, which) -> {
                         sendItemsBroadcast("setCustomWalkPathIdQueue", "clearCustomWalkPathIdQueue", null);
                     }).show();
+        });
+
+        btnFetchRanking.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendItemsBroadcast("antForest", "fetchRanking", null);
+                ToastUtil.show(ExtensionsActivity.this, "已发送拉取总榜请求，请在日志查看结果！");
+            }
         });
 
         btnDeveloperMode.setOnClickListener(new View.OnClickListener() {

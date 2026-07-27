@@ -3,19 +3,23 @@ package io.github.lazyimmortal.sesame.model.extensions;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.Iterator;
 import java.util.Objects;
 
 import io.github.lazyimmortal.sesame.data.TokenConfig;
 import io.github.lazyimmortal.sesame.hook.Toast;
+import io.github.lazyimmortal.sesame.model.task.antForest.AntForestRpcCall;
 import io.github.lazyimmortal.sesame.model.task.antSports.AntSportsRpcCall;
 import io.github.lazyimmortal.sesame.model.task.protectEcology.ProtectTreeRpcCall;
+import io.github.lazyimmortal.sesame.util.FileUtil;
 import io.github.lazyimmortal.sesame.util.Log;
 import io.github.lazyimmortal.sesame.util.MessageUtil;
 import io.github.lazyimmortal.sesame.util.Status;
 import io.github.lazyimmortal.sesame.util.StringUtil;
 import io.github.lazyimmortal.sesame.util.TimeUtil;
 import io.github.lazyimmortal.sesame.util.idMap.PathThemeMapListMap;
+import io.github.lazyimmortal.sesame.util.idMap.UserIdMap;
 
 public class ExtensionsHandle {
     private static final String TAG = ExtensionsHandle.class.getSimpleName();
@@ -40,6 +44,10 @@ public class ExtensionsHandle {
                     getUnlockTreeItems();
                 } else if (Objects.equals("fillWateredFriendList", fun)) {
                     fillWateredFriendList();
+                } else if (Objects.equals("fetchRanking", fun)) {
+                    fetchRanking();
+                } else if (Objects.equals("queryFriendEnergy", fun)) {
+                    queryFriendHomePage((String) data);
                 }
                 break;
             case "setCustomWalkPathIdList":
@@ -241,6 +249,137 @@ public class ExtensionsHandle {
     private static void clearCustomWalkPathIdQueue() {
         if (TokenConfig.clearCustomWalkPathIdQueue()) {
             Toast.show("清除待行走路线队列成功");
+        }
+    }
+
+    private static void fetchRanking() {
+        try {
+            File userListFile = new File(FileUtil.MAIN_DIRECTORY_FILE, "userList.json");
+            String userListJson;
+            if (userListFile.exists()) {
+                userListJson = FileUtil.readFromFile(userListFile);
+            } else {
+                String defaultList = "{\"userList\": []}";
+                FileUtil.write2File(defaultList, userListFile);
+                userListJson = defaultList;
+            }
+            JSONObject userListRoot = new JSONObject(userListJson);
+            JSONArray userList = userListRoot.optJSONArray("userList");
+            if (userList == null || userList.length() == 0) {
+                Log.record("拉取总榜: userList.json 中没有用户数据");
+                return;
+            }
+            Log.record("拉取总榜: 开始拉取 " + userList.length() + " 个用户数据");
+            JSONArray results = new JSONArray();
+            int successCount = 0;
+            int failCount = 0;
+            for (int i = 0; i < userList.length(); i++) {
+                JSONObject record = userList.optJSONObject(i);
+                if (record == null) {
+                    continue;
+                }
+                String userId = record.optString("userId", "").trim();
+                if (userId.isEmpty()) {
+                    continue;
+                }
+                try {
+                    String response = AntForestRpcCall.queryFriendHomePage(userId);
+                    JSONObject responseJson = new JSONObject(response);
+                    if (!"SUCCESS".equals(responseJson.optString("resultCode"))) {
+                        Log.record("拉取总榜: 查询用户 " + userId + " 失败 " + responseJson.optString("resultDesc"));
+                        failCount++;
+                        continue;
+                    }
+                    JSONObject userBaseInfo = responseJson.optJSONObject("userBaseInfo");
+                    if (userBaseInfo == null) {
+                        Log.record("拉取总榜: 查询用户 " + userId + " 返回数据中没有 userBaseInfo");
+                        failCount++;
+                        continue;
+                    }
+                    JSONObject output = new JSONObject();
+                    output.put("昵称", record.optString("nickName", ""));
+                    output.put("userId", userBaseInfo.optString("userId", ""));
+                    output.put("昵称-支", userBaseInfo.optString("displayName", ""));
+                    output.put("总能量", userBaseInfo.optLong("totalEnergy", 0));
+                    output.put("当前能量", userBaseInfo.optLong("currentEnergy", 0));
+                    output.put("总证书", userBaseInfo.optInt("totalCertCount", 0));
+                    output.put("古树", userBaseInfo.optInt("ancientTreeCount", 0));
+                    output.put("动物", userBaseInfo.optInt("animalCertCount", 0));
+                    output.put("保护地", userBaseInfo.optInt("reserveCount", 0));
+                    output.put("海洋", userBaseInfo.optInt("seaPlantCount", 0));
+                    output.put("森林", userBaseInfo.optInt("treeCount", 0));
+                    output.put("登录账号", userBaseInfo.optString("loginId", ""));
+                    output.put("头像", userBaseInfo.optString("headPortrait", ""));
+                    results.put(output);
+                    successCount++;
+                    Log.record("拉取总榜: [" + (i + 1) + "/" + userList.length() + "] " + userId + " 查询成功");
+                    Thread.sleep(200);
+                } catch (Exception e) {
+                    Log.record("拉取总榜: 查询用户 " + userId + " 异常 " + e.getMessage());
+                    Log.printStackTrace(TAG, e);
+                    failCount++;
+                }
+            }
+            File outputFile = new File(FileUtil.MAIN_DIRECTORY_FILE, "森林数据.json");
+            JSONObject outputRoot = new JSONObject();
+            outputRoot.put("userBaseInfoList", results);
+            outputRoot.put("保存时间", java.text.DateFormat.getDateTimeInstance().format(new java.util.Date()));
+            FileUtil.write2File(outputRoot.toString(2), outputFile);
+            Log.record("拉取总榜: 完成！成功 " + successCount + " 失败 " + failCount);
+        } catch (Exception e) {
+            Log.record("拉取总榜: 异常 " + e.getMessage());
+            Log.printStackTrace(TAG, e);
+        }
+    }
+
+    private static void queryFriendHomePage(String uid) {
+        try {
+            Log.forest("森林查询[" + UserIdMap.getMaskName(uid) + "]");
+            String s = AntForestRpcCall.queryFriendHomePage(uid);
+            TimeUtil.sleep(100);
+            JSONObject jo = new JSONObject(s);
+            if ("SUCCESS".equals(jo.getString("resultCode"))) {
+                JSONArray bubbles = jo.optJSONArray("bubbles");
+                JSONArray wateringBubbles = jo.optJSONArray("wateringBubbles");
+                if (bubbles != null && bubbles.length() > 0) {
+                    for (int i = 0; i < bubbles.length(); i++) {
+                        jo = bubbles.optJSONObject(i);
+                        int remainEnergy = jo.optInt("remainEnergy");
+                        Long produceTime = jo.getLong("produceTime");
+                        String bigIconDisplayName = jo.optJSONObject("business")
+                                .optString("bigIconDisplayName");
+                        Log.forest("森林查询[" + bigIconDisplayName + "|"
+                                + TimeUtil.getCommonDate(produceTime) + " " + TimeUtil.getTimeStr(produceTime) + "]#"
+                                + remainEnergy + "g");
+                    }
+                } else {
+                    Log.forest("森林查询[未查询到森林能量球]");
+                }
+                if (wateringBubbles != null && wateringBubbles.length() > 0) {
+                    for (int j = 0; j < wateringBubbles.length(); j++) {
+                        jo = wateringBubbles.optJSONObject(j);
+                        int fullEnergy = jo.optInt("fullEnergy");
+                        String userId = jo.optString("userId");
+                        String bizType = jo.optString("bizType");
+                        if (!"jiaoshui".equals(bizType))
+                            continue;
+                        Long produceTime = jo.getLong("produceTime");
+                        Log.forest("森林查询[浇水来源:"
+                                + UserIdMap.getMaskName(userId) + "|"
+                                + TimeUtil.getCommonDate(produceTime) + " " + TimeUtil.getTimeStr(produceTime) + "]#"
+                                + fullEnergy + "g");
+                    }
+                } else {
+                    Log.forest("森林查询[未查询到浇水能量球]");
+                }
+            } else {
+                Log.forest("森林查询[查询失败]");
+                Log.record(jo.getString("resultDesc"));
+                Log.i(s);
+            }
+        } catch (Throwable t) {
+            Log.i(TAG, "queryFriendHomePage err:");
+            Log.printStackTrace(TAG, t);
         }
     }
 }

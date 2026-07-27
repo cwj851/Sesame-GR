@@ -259,6 +259,8 @@ public class AntForestV2 extends ModelTask {
 
     private BooleanModelField energyPvp;
 
+    private BooleanModelField recordTotalCertCount;
+
     @Override
     public ModelFields getFields() {
         ModelFields modelFields = new ModelFields();
@@ -338,6 +340,7 @@ public class AntForestV2 extends ModelTask {
         modelFields.addField(dress = new BooleanModelField("dress", "装扮保护 | 开启", false));
         modelFields.addField(dressDetailList = new TextModelField("dressDetailList", "装扮保护 | " + "装扮信息", ""));
         modelFields.addField(new EmptyModelField("dressDetailListClear", "装扮保护 | 装扮信息清除", () -> dressDetailList.reset()));
+        modelFields.addField(recordTotalCertCount = new BooleanModelField("recordTotalCertCount", "记录森林证书总数", false));
         return modelFields;
     }
 
@@ -438,6 +441,17 @@ public class AntForestV2 extends ModelTask {
             } catch (Throwable t) {
                 Log.i(TAG, "queryEnergyRanking err:");
                 Log.printStackTrace(TAG, t);
+            }
+
+            if (recordTotalCertCount.getValue() && selfHomeObject != null && selfHomeObject.has("userBaseInfo")) {
+                try {
+                    JSONObject userBaseInfo = selfHomeObject.getJSONObject("userBaseInfo");
+                    int totalCertCount = userBaseInfo.optInt("totalCertCount", 0);
+                    FileUtil.setCertCount(UserIdMap.getCurrentUid(), Log.getFormatDate(), totalCertCount);
+                } catch (Throwable t) {
+                    Log.i(TAG, "recordTotalCertCount err:");
+                    Log.printStackTrace(TAG, t);
+                }
             }
 
             if (!TaskCommon.IS_ENERGY_TIME && selfHomeObject != null) {

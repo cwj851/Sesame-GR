@@ -160,6 +160,14 @@ public class MessageUtil {
         return false;
     }
 
+    public static Boolean checkResponse(JSONObject jo) {
+        return checkSuccess(jo);
+    }
+
+    public static Boolean checkResponse(String tag, JSONObject jo) {
+        return checkSuccess(tag, jo);
+    }
+
     public static void checkResultCodeAndMarkTaskBlackList(String listTitle, String taskTitle, JSONObject jo) {
         try {
             if (jo == null) {

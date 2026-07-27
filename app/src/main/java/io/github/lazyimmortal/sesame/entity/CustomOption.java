@@ -71,4 +71,11 @@ public class CustomOption extends IdAndName {
         list.add(new CustomOption("gainSumInsured", "保障金领取"));
         return list;
     }
+
+    public static List<CustomOption>
+    getAntForestVitalityOptions() {
+        List<CustomOption> list = new ArrayList<>();
+        list.add(new CustomOption("SEC_KILL", "限量秒杀"));
+        return list;
+    }
 }

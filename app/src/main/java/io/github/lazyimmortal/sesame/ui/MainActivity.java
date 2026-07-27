@@ -114,16 +114,6 @@ public class MainActivity extends BaseActivity {
         else {
             registerReceiver(broadcastReceiver, intentFilter);
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.tips);
-        builder.setMessage(R.string.start_message);
-        builder.setPositiveButton(R.string.btn_understood, (dialog, which) -> dialog.dismiss());
-        AlertDialog alertDialog = builder.create();
-        alertDialog.show();
-        Button positiveButton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
-        if (positiveButton != null) {
-            positiveButton.setTextColor(ContextCompat.getColor(this, R.color.button));
-        }
     }
     
     @Override
