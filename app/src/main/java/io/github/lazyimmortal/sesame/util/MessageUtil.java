@@ -249,6 +249,13 @@ public class MessageUtil {
                     }
                     break;
 
+                //金豆夺宝任务AntGoldenBean
+                case "AntGoldenBeanTaskList":
+                    if (canAddBlackList) {
+                        MarkTaskBlackList("AntGoldenBean", listTitle, "金豆夺宝任务", taskTitle);
+                    }
+                    break;
+
                 //新村任务AntStall
                 case "AntStallTaskList":
                     if (canAddBlackList) {

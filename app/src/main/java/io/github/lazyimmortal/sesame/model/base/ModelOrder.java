@@ -12,6 +12,7 @@ import io.github.lazyimmortal.sesame.model.task.antDodo.AntDodo;
 import io.github.lazyimmortal.sesame.model.task.antFarm.AntFarm;
 import io.github.lazyimmortal.sesame.model.task.antForest.AntForestV2;
 import io.github.lazyimmortal.sesame.model.task.antMember.AntMember;
+import io.github.lazyimmortal.sesame.model.task.antGoldenBean.AntGoldenBean;
 import io.github.lazyimmortal.sesame.model.task.antOcean.AntOcean;
 import io.github.lazyimmortal.sesame.model.task.antOrchard.AntOrchard;
 import io.github.lazyimmortal.sesame.model.task.antSports.AntSports;
@@ -31,6 +32,7 @@ public class ModelOrder {
         clazzList.add(AntFarm.class);
         clazzList.add(AntStall.class);
         clazzList.add(AntOrchard.class);
+        clazzList.add(AntGoldenBean.class);
         clazzList.add(ProtectEcology.class);
         clazzList.add(AntDodo.class);
         clazzList.add(AntOcean.class);
