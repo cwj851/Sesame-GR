@@ -275,10 +275,10 @@ public class ExtensionsHandle {
             JSONObject userListRoot = new JSONObject(userListJson);
             JSONArray userList = userListRoot.optJSONArray("userList");
             if (userList == null || userList.length() == 0) {
-                Log.record("拉取总榜: userList.json 中没有用户数据");
+                Log.record("拉取总榜：userList.json 中没有用户数据");
                 return;
             }
-            Log.record("拉取总榜: 开始拉取 " + userList.length() + " 个用户数据");
+            Log.record("拉取总榜：开始拉取 " + userList.length() + " 个用户数据");
             JSONArray results = new JSONArray();
             int successCount = 0;
             int failCount = 0;
@@ -295,20 +295,20 @@ public class ExtensionsHandle {
                     String response = AntForestRpcCall.queryFriendHomePage(userId);
                     JSONObject responseJson = new JSONObject(response);
                     if (!"SUCCESS".equals(responseJson.optString("resultCode"))) {
-                        Log.record("拉取总榜: 查询用户 " + userId + " 失败 " + responseJson.optString("resultDesc"));
+                        Log.record("拉取总榜：查询用户 " + userId + " 失败 " + responseJson.optString("resultDesc"));
                         failCount++;
                         continue;
                     }
                     JSONObject userBaseInfo = responseJson.optJSONObject("userBaseInfo");
                     if (userBaseInfo == null) {
-                        Log.record("拉取总榜: 查询用户 " + userId + " 返回数据中没有 userBaseInfo");
+                        Log.record("拉取总榜：查询用户 " + userId + " 返回数据中没有 userBaseInfo");
                         failCount++;
                         continue;
                     }
                     JSONObject output = new JSONObject();
                     output.put("昵称", record.optString("nickName", ""));
-                    output.put("userId", userBaseInfo.optString("userId", ""));
-                    output.put("昵称-支", userBaseInfo.optString("displayName", ""));
+                    output.put("userId", maskUserId(userBaseInfo.optString("userId", "")));
+                    output.put("昵称 - 支", userBaseInfo.optString("displayName", ""));
                     output.put("总能量", userBaseInfo.optLong("totalEnergy", 0));
                     output.put("当前能量", userBaseInfo.optLong("currentEnergy", 0));
                     output.put("总证书", userBaseInfo.optInt("totalCertCount", 0));
@@ -321,10 +321,10 @@ public class ExtensionsHandle {
                     output.put("头像", userBaseInfo.optString("headPortrait", ""));
                     results.put(output);
                     successCount++;
-                    Log.record("拉取总榜: [" + (i + 1) + "/" + userList.length() + "] " + userId + " 查询成功");
+                    Log.record("拉取总榜：[" + (i + 1) + "/" + userList.length() + "] " + userId + " 查询成功");
                     Thread.sleep(200);
                 } catch (Exception e) {
-                    Log.record("拉取总榜: 查询用户 " + userId + " 异常 " + e.getMessage());
+                    Log.record("拉取总榜：查询用户 " + userId + " 异常 " + e.getMessage());
                     Log.printStackTrace(TAG, e);
                     failCount++;
                 }
@@ -334,11 +334,22 @@ public class ExtensionsHandle {
             outputRoot.put("userBaseInfoList", results);
             outputRoot.put("保存时间", java.text.DateFormat.getDateTimeInstance().format(new java.util.Date()));
             FileUtil.write2File(outputRoot.toString(2), outputFile);
-            Log.record("拉取总榜: 完成！成功 " + successCount + " 失败 " + failCount);
+            Log.record("拉取总榜：完成！成功 " + successCount + " 失败 " + failCount);
         } catch (Exception e) {
-            Log.record("拉取总榜: 异常 " + e.getMessage());
+            Log.record("拉取总榜：异常 " + e.getMessage());
             Log.printStackTrace(TAG, e);
         }
+    }
+
+    private static String maskUserId(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            return userId;
+        }
+        int length = userId.length();
+        if (length > 7) {
+            return userId.substring(0, 3) + "****" + userId.substring(length - 4);
+        }
+        return userId;
     }
 
     private static void queryFriendHomePage(String uid) {
