@@ -10,6 +10,7 @@ import java.util.Objects;
 import io.github.lazyimmortal.sesame.data.TokenConfig;
 import io.github.lazyimmortal.sesame.hook.ApplicationHook;
 import io.github.lazyimmortal.sesame.hook.Toast;
+import io.github.lazyimmortal.sesame.model.task.antFarm.AntFarmRpcCall;
 import io.github.lazyimmortal.sesame.model.task.antForest.AntForestRpcCall;
 import io.github.lazyimmortal.sesame.model.task.antSports.AntSportsRpcCall;
 import io.github.lazyimmortal.sesame.model.task.protectEcology.ProtectTreeRpcCall;
@@ -49,6 +50,10 @@ public class ExtensionsHandle {
                     fetchRanking();
                 } else if (Objects.equals("queryFriendEnergy", fun)) {
                     queryFriendHomePage((String) data);
+                } else if (Objects.equals("queryPropList", fun)) {
+                    queryPropList();
+                } else if (Objects.equals("queryFarmFood", fun)) {
+                    queryFarmFood();
                 }
                 break;
             case "setCustomWalkPathIdList":
@@ -400,6 +405,55 @@ public class ExtensionsHandle {
         } catch (Throwable t) {
             Log.i(TAG, "queryFriendHomePage err:");
             Log.printStackTrace(TAG, t);
+        }
+    }
+
+    private static void queryPropList() {
+        try {
+            JSONObject jo = new JSONObject(AntForestRpcCall.queryPropList(false));
+            if ("SUCCESS".equals(jo.getString("resultCode"))) {
+                JSONArray forestPropVOList = jo.optJSONArray("forestPropVOList");
+                if (forestPropVOList != null && forestPropVOList.length() > 0) {
+                    for (int i = 0; i < forestPropVOList.length(); i++) {
+                        jo = forestPropVOList.getJSONObject(i);
+                        int holdsNum = jo.optInt("holdsNum", 0);
+                        String propName = jo.optJSONObject("propConfigVO").optString("propName");
+                        Log.forest("查询道具🎭[" + propName + "]#" + holdsNum + "个");
+                    }
+                }
+            } else {
+                Log.record(jo.getString("resultDesc"));
+                Log.i(jo.toString());
+            }
+        } catch (Throwable th) {
+            Log.i(TAG, "queryPropList err:");
+            Log.printStackTrace(TAG, th);
+        }
+    }
+
+    private static void queryFarmFood() {
+        try {
+            JSONObject jo = new JSONObject(AntFarmRpcCall.enterFarm("", UserIdMap.getCurrentUid()));
+            if (!MessageUtil.checkResponse(TAG, jo)) {
+                return;
+            }
+            int countSum = 0;
+            JSONArray cuisineList = jo.optJSONArray("cuisineList");
+            if (cuisineList != null && cuisineList.length() > 0) {
+                for (int i = 0; i < cuisineList.length(); i++) {
+                    jo = cuisineList.getJSONObject(i);
+                    int count = jo.optInt("count", 0);
+                    String name = jo.optString("name");
+                    if (count > 0) {
+                        countSum = countSum + count;
+                        Log.farm("查询美食🍱[" + name + "]#" + count + "个");
+                    }
+                }
+                Log.farm("查询美食🍱合计" + countSum + "个。");
+            }
+        } catch (Throwable th) {
+            Log.i(TAG, "queryFarmFood err:");
+            Log.printStackTrace(TAG, th);
         }
     }
 }

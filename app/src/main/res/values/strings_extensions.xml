@@ -15,4 +15,6 @@
     <string name="btn_add_custom_walk_path_id">Add</string>
     <string name="btn_clear_custom_walk_path_id_queue">Clear</string>
     <string name="msg_input_custom_walk_path_id">Please input walk pathId</string>
+    <string name="query_prop_list">Query forest props🎭</string>
+    <string name="query_farm_food">Query farm food🍱</string>
 </resources>

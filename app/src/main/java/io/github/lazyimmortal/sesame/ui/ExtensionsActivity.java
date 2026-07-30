@@ -23,6 +23,7 @@ public class ExtensionsActivity extends BaseActivity {
     Button btnFetchRanking;
     Button btnDeveloperMode;
     Button btnFillWateredFriendList;
+    Button btnQueryPropList, btnQueryFarmFood;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -41,6 +42,8 @@ public class ExtensionsActivity extends BaseActivity {
         btnFetchRanking = findViewById(R.id.btn_fetch_ranking);
         btnDeveloperMode = findViewById(R.id.btn_developer_mode);
         btnFillWateredFriendList = findViewById(R.id.btn_fill_watered_friend_list);
+        btnQueryPropList = findViewById(R.id.btn_query_prop_list);
+        btnQueryFarmFood = findViewById(R.id.btn_query_farm_food);
         
         btnGetWateredItems.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -159,6 +162,22 @@ public class ExtensionsActivity extends BaseActivity {
             public void onClick(View view) {
                 sendItemsBroadcast("antForest", "fillWateredFriendList", null);
                 ToastUtil.show(ExtensionsActivity.this, "已发送填入请求，请在森林日志查看结果！");
+            }
+        });
+
+        btnQueryPropList.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendItemsBroadcast("antForest", "queryPropList", null);
+                ToastUtil.show(ExtensionsActivity.this, "已发送查询请求，请在森林日志查看结果！");
+            }
+        });
+
+        btnQueryFarmFood.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendItemsBroadcast("antFarm", "queryFarmFood", null);
+                ToastUtil.show(ExtensionsActivity.this, "已发送查询请求，请在庄园日志查看结果！");
             }
         });
     }

@@ -15,4 +15,6 @@
     <string name="btn_add_custom_walk_path_id">添加</string>
     <string name="btn_clear_custom_walk_path_id_queue">清除</string>
     <string name="msg_input_custom_walk_path_id">请输入要添加的路线代码</string>
+    <string name="query_prop_list">查询森林道具🎭</string>
+    <string name="query_farm_food">查询庄园美食🍱</string>
 </resources>
