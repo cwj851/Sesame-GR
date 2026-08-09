@@ -166,12 +166,8 @@ public class AntForestV2 extends ModelTask {
     private BooleanModelField balanceNetworkDelay;
     //PK能量
     private BooleanModelField pkEnergy;
-    private ChoiceModelField whackModeName;
-    private IntegerModelField whackModeGames;
-    private IntegerModelField whackModeCount;
+    private BooleanModelField whackMoleEnable;
     private IntegerModelField earliestwhackMoleTime;
-
-    // 定义运行模式名称数组（需提前声明，与原 Kotlin 中的 whackMoleModeNames 对应）
 
     private BooleanModelField collectProp;
     private StringModelField queryInterval;
@@ -303,9 +299,7 @@ public class AntForestV2 extends ModelTask {
         modelFields.addField(helpFriendCollectListLimit = new IntegerModelField("helpFriendCollectListLimit", "复活好友能量下限(大于该值复活)", 0, 0, 100000));
         modelFields.addField(vitalityExchangeBenefit = new BooleanModelField("vitalityExchangeBenefit", "活力值 | 兑换权益", false));
         modelFields.addField(vitality_ExchangeBenefitList = new SelectAndCountModelField("vitality_ExchangeBenefitList", "活力值 | 权益列表", new LinkedHashMap<>(), VitalityBenefit::getList, "请填写兑换次数(每日)"));
-        modelFields.addField(whackModeName = new ChoiceModelField("whackModeName", "6秒拼手速 | 运行模式", whackModeNames.CLOSE, whackModeNames.nickNames));
-        modelFields.addField(whackModeGames = new IntegerModelField("whackModeGames", "6秒拼手速 | 激进模式局数", 5));
-        modelFields.addField(whackModeCount = new IntegerModelField("whackModeCount", "6秒拼手速 | 兼容模式击打数", 15));
+        modelFields.addField(whackMoleEnable = new BooleanModelField("whackMoleEnable", "6秒拼手速 | 开启", true));
         modelFields.addField(earliestwhackMoleTime = new IntegerModelField("earliestwhackMoleTime", "6秒拼手速 | 最早执行(24小时制)", 8, 0, 23));
         modelFields.addField(collectProp = new BooleanModelField("collectProp", "收集道具", false));
         modelFields.addField(whoYouWantToGiveTo = new SelectModelField("whoYouWantToGiveTo", "赠送道具好友列表", new LinkedHashSet<>(), AlipayUser::getList, "会赠送所有可送道具都给已选择的好友"));
@@ -955,11 +949,11 @@ public class AntForestV2 extends ModelTask {
         try {
             JSONObject selfHomeObject = querySelfHome();
             if (selfHomeObject != null) {
-                if (whackModeName.getValue() == whackModeNames.CLOSE) {
+                if (!whackMoleEnable.getValue()) {
                     JSONObject propertiesObject = selfHomeObject.optJSONObject("properties");
                     if (propertiesObject != null) {
                         if (Objects.equals("Y", propertiesObject.optString("whackMole"))) {
-                            if (io.github.lazyimmortal.sesame.model.task.antForest.WhackMole.closeWhackMole()) {
+                            if (WhackMole.closeWhackMole()) {
                                 Log.record("6秒拼手速关闭成功");
                             } else {
                                 Log.record("6秒拼手速关闭失败");
@@ -1648,17 +1642,11 @@ public class AntForestV2 extends ModelTask {
      */
     private void whackMole() {
         try {
-            if (whackModeName.getValue() == whackModeNames.CLOSE) {
-                // 检查今天是否已执行过打地鼠
-                if (Status.hasFlagToday("forest::whackMole::executed")) {
-                    Log.record("⏭️ 今天已完成过6秒拼手速，跳过执行");
-                } else {
-                    // 主动执行打地鼠（今日首次）
-                    Log.record("🎮 开始执行6秒拼手速（今日首次）");
-                    checkAndHandleWhackMole();
-                    Status.flagToday("forest::whackMole::executed");
-                    Log.record("✅ 6秒拼手速已完成，今天不再执行");
-                }
+            if (Status.hasFlagToday("forest::whackMole::executed")) {
+                Log.record("⏭️ 今天已完成过6秒拼手速，跳过执行");
+            } else {
+                Log.record("🎮 开始执行6秒拼手速（今日首次）");
+                checkAndHandleWhackMole();
             }
         } catch (Throwable t) {
             Log.i(TAG, "whackMole err:");
@@ -1668,11 +1656,7 @@ public class AntForestV2 extends ModelTask {
 
     private void checkAndHandleWhackMole() {
         try {
-            // 获取当前选择的索引 (0, 1, 或 2)
-            int modeIndex = (whackModeName != null) ? whackModeName.getValue() : 0;
-
-            // 如果索引为 0 (关闭)，直接返回
-            if (modeIndex == 0) {
+            if (!whackMoleEnable.getValue()) {
                 return;
             }
 
@@ -1684,23 +1668,8 @@ public class AntForestV2 extends ModelTask {
                     return;
                 }
 
-                // 根据索引匹配模式
-                switch (modeIndex) {
-                    case 1: // 兼容模式
-                        Log.record("触发任务🎮拼手速:兼容模式");
-                        WhackMole.setTotalGames(1);
-                        int defaultMoleCount = (whackModeCount != null) ? whackModeCount.getValue() : 15;
-                        WhackMole.setMoleCount(defaultMoleCount);
-                        WhackMole.start(WhackMole.Mode.COMPATIBLE);
-                        break;
-
-                    case 2: // 激进模式
-                        Log.record("触发任务🎮拼手速:激进模式");
-                        int configGames = (whackModeGames != null) ? whackModeGames.getValue() : 5;
-                        WhackMole.setTotalGames(configGames);
-                        WhackMole.start(WhackMole.Mode.AGGRESSIVE);
-                        break;
-                }
+                Log.record("触发任务🎮拼手速");
+                WhackMole.start();
             }
         } catch (Throwable t) {
             Log.printStackTrace(TAG, t);
@@ -4458,12 +4427,5 @@ public class AntForestV2 extends ModelTask {
         int BELOW_THRESHOLD = 2;
 
         String[] nickNames = {"所有", "大于阈值", "小于阈值"};
-    }
-
-    public interface whackModeNames {
-        int CLOSE = 0;
-        int WHACK_MODE_COMPATIBLE = 1;
-        int WHACK_MODE_AGGRESSIVE = 2;
-        String[] nickNames = {"关闭", "兼容模式", "激进模式"};
     }
 }
