@@ -329,7 +329,7 @@ public class AntFarm extends ModelTask {
                 harvestProduce(ownerFarmId);
             }
 
-            if (competition.getValue()) {
+            if (competition.getValue() && isDonationCompetitionOpen()) {
                 competition();
             } else if (donationType.getValue() != DonationType.ZERO) {
                 donation();
@@ -986,6 +986,22 @@ public class AntFarm extends ModelTask {
             Log.i(TAG, "harvestProduce err:");
             Log.printStackTrace(TAG, t);
         }
+    }
+
+    /* 判断排位赛活动是否开启中（listActivityInfo 返回 donationCompetitionInfo.functionSwitch == true） */
+    private boolean isDonationCompetitionOpen() {
+        try {
+            JSONObject jo = new JSONObject(AntFarmRpcCall.listActivityInfo());
+            if (!MessageUtil.checkMemo(TAG, jo)) {
+                return false;
+            }
+            JSONObject donationCompetitionInfo = jo.optJSONObject("donationCompetitionInfo");
+            return donationCompetitionInfo != null && donationCompetitionInfo.optBoolean("functionSwitch");
+        } catch (Throwable t) {
+            Log.i(TAG, "isDonationCompetitionOpen err:");
+            Log.printStackTrace(TAG, t);
+        }
+        return false;
     }
 
     /* 捐赠爱心鸡蛋 */

@@ -52,7 +52,10 @@ public class ExtensionsHandle {
                     queryFriendHomePage((String) data);
                 } else if (Objects.equals("queryPropList", fun)) {
                     queryPropList();
-                } else if (Objects.equals("queryFarmFood", fun)) {
+                }
+                break;
+            case "antFarm":
+                if (Objects.equals("queryFarmFood", fun)) {
                     queryFarmFood();
                 }
                 break;
