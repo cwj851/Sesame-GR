@@ -519,6 +519,44 @@ public class AntForestRpcCall {
     public static String closeWhackMole() {
         return ApplicationHook.requestString("alipay.antforest.forest.h5.updateUserConfig", "[{\"configMap" + "\":{\"whackMole\":\"N\"},\"source\":\"chInfo_ch_appcenter__chsub_9patch\"}]");
     }
+
+    // ========== 节约用水 绿色能量卡 ==========
+
+    private static final String WATER_SAVE_AGENT_ID = "TBOX_202504APiQBS00063099_wuxiaoxian";
+
+    /**
+     * 查询绿色能量卡片（每日3次机会，查询返回"领取失败"即达上限）
+     */
+    public static String queryGreenEnergyCard() {
+        String args = "[{\"agentId\":\"" + WATER_SAVE_AGENT_ID + "\",\"appId\":\"" + WATER_SAVE_AGENT_ID + "\","
+                + "\"extInfo\":{"
+                + "\"activeBtnBgUrl\":\"https://mdn.alipayobjects.com/huamei_o8djs0/afts/img/A*TR-4SLqW6lcAAAAAQ7AAAAgAembCAQ/original\","
+                + "\"agentId\":\"" + WATER_SAVE_AGENT_ID + "\","
+                + "\"appId\":\"" + WATER_SAVE_AGENT_ID + "\","
+                + "\"bgUrl\":\"https://mdn.alipayobjects.com/huamei_o8djs0/afts/img/A*2QWORZn44gkAAAAASIAAAAgAembCAQ/original\","
+                + "\"cityCode\":\"330500\",\"cityName\":\"湖州市\",\"currentStatus\":\"active\","
+                + "\"desc\":\"武功山文旅官方平台为你提供服务\","
+                + "\"disabledBtnBgUrl\":\"https://mdn.alipayobjects.com/huamei_xxuy9n/afts/img/A*6K6iSqIZsnAAAAAAQKAAAAgAelrCAQ/original\","
+                + "\"halfscreenHeight\":100,\"jumpUrl\":\"\",\"lbs\":\"120.445835,30.837882\","
+                + "\"logo\":\"https://mdn.alipayobjects.com/huamei_o8djs0/afts/img/A*vAv-Rq5ihP8AAAAAWsAAAAgAembCAQ/original\","
+                + "\"nodeId\":\"greenEnergyFirst\",\"operationType\":\"com.alipay.cloud.common.rpc.service\","
+                + "\"pid\":\"2088041375464820\",\"projectId\":\"HD20250616000001QKT999\",\"rpcCode\":\"greenEnergyFirst\","
+                + "\"scenicId\":\"武功山\",\"title\":\"驴UU\",\"userId\":\"\""
+                + "},\"nodeId\":\"greenEnergyFirst\",\"rpcCode\":\"greenEnergyFirst\",\"userId\":\"\"}]";
+        return ApplicationHook.requestString("com.alipay.cloud.common.rpc.service", args);
+    }
+
+    /**
+     * 领取绿色能量卡片（每张16g）
+     */
+    public static String receiveGreenEnergyCard(String bubbleId) {
+        String uid = UserIdMap.getCurrentUid();
+        String args = "[{\"agentId\":\"" + WATER_SAVE_AGENT_ID + "\",\"appId\":\"" + WATER_SAVE_AGENT_ID + "\","
+                + "\"extInfo\":{\"appId\":\"" + WATER_SAVE_AGENT_ID + "\",\"bubbleId\":\"" + bubbleId + "\","
+                + "\"pid\":\"2088041375464820\",\"projectId\":\"HD20250616000001QKT999\",\"scenicId\":\"武功山\","
+                + "\"userId\":\"" + uid + "\"},\"nodeId\":\"GreenEnergyCardReceive\",\"rpcCode\":\"GreenEnergyCardReceive\"}]";
+        return ApplicationHook.requestString("com.alipay.cloud.common.rpc.service", args);
+    }
     
     /* 翻倍额外能量收取 */
     public static String collectRobExpandEnergy(String propId, String propType) {

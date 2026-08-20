@@ -168,6 +168,7 @@ public class AntForestV2 extends ModelTask {
     private BooleanModelField pkEnergy;
     private BooleanModelField whackMoleEnable;
     private IntegerModelField earliestwhackMoleTime;
+    private BooleanModelField waterSaveEnergyEnable;
 
     private BooleanModelField collectProp;
     private StringModelField queryInterval;
@@ -301,6 +302,7 @@ public class AntForestV2 extends ModelTask {
         modelFields.addField(vitality_ExchangeBenefitList = new SelectAndCountModelField("vitality_ExchangeBenefitList", "活力值 | 权益列表", new LinkedHashMap<>(), VitalityBenefit::getList, "请填写兑换次数(每日)"));
         modelFields.addField(whackMoleEnable = new BooleanModelField("whackMoleEnable", "6秒拼手速 | 开启", true));
         modelFields.addField(earliestwhackMoleTime = new IntegerModelField("earliestwhackMoleTime", "6秒拼手速 | 最早执行(24小时制)", 8, 0, 23));
+        modelFields.addField(waterSaveEnergyEnable = new BooleanModelField("waterSaveEnergyEnable", "节约用水 | 开启", false));
         modelFields.addField(collectProp = new BooleanModelField("collectProp", "收集道具", false));
         modelFields.addField(whoYouWantToGiveTo = new SelectModelField("whoYouWantToGiveTo", "赠送道具好友列表", new LinkedHashSet<>(), AlipayUser::getList, "会赠送所有可送道具都给已选择的好友"));
         modelFields.addField(energyRain = new BooleanModelField("energyRain", "收集能量雨", false));
@@ -676,6 +678,7 @@ public class AntForestV2 extends ModelTask {
                 }
 
                 checkAndHandleWhackMole();
+                checkAndHandleWaterSaveEnergy();
 
                 //森林乐园
                 if (drawGameCenterAward.getValue()) {
@@ -1672,6 +1675,67 @@ public class AntForestV2 extends ModelTask {
                 WhackMole.start();
             }
         } catch (Throwable t) {
+            Log.printStackTrace(TAG, t);
+        }
+    }
+
+    /**
+     * 节约用水 绿色能量卡领取（每日每账号3次，每次16g）
+     * 流程：先查询绿色能量卡片，再逐张领取；查询返回"领取失败"即已达每日3次上限
+     */
+    private void checkAndHandleWaterSaveEnergy() {
+        try {
+            if (!waterSaveEnergyEnable.getValue()) {
+                return;
+            }
+            String uid = UserIdMap.getCurrentUid();
+            for (int i = 0; i < 3; i++) {
+                String receiveFlag = "forest::waterSaveEnergy::receive::" + i;
+                if (Status.hasFlagToday(receiveFlag)) {
+                    continue;
+                }
+                JSONObject jo = new JSONObject(AntForestRpcCall.queryGreenEnergyCard());
+                Object resultObj = jo.opt("resultObj");
+                if (resultObj instanceof JSONObject) {
+                    Log.record("节约用水💧已达每日3次领取上限：" + ((JSONObject) resultObj).optString("resultMsg"));
+                    break;
+                }
+                JSONArray cardList = jo.optJSONArray("resultObj");
+                if (cardList == null || cardList.length() == 0) {
+                    Log.record("节约用水💧暂无可领取卡片");
+                    break;
+                }
+                boolean received = false;
+                for (int j = 0; j < cardList.length(); j++) {
+                    JSONObject data = cardList.getJSONObject(j).optJSONObject("data");
+                    if (data == null) {
+                        continue;
+                    }
+                    JSONObject requestData = data.optJSONObject("requestData");
+                    if (requestData == null) {
+                        continue;
+                    }
+                    String bubbleId = requestData.optJSONObject("extInfo").optString("bubbleId");
+                    if (bubbleId.isEmpty()) {
+                        continue;
+                    }
+                    JSONObject receiveJo = new JSONObject(AntForestRpcCall.receiveGreenEnergyCard(bubbleId));
+                    JSONObject receiveResult = receiveJo.optJSONObject("resultObj");
+                    if (receiveResult != null && "000000".equals(receiveResult.optString("resultCode")) && receiveResult.optBoolean("data", false)) {
+                        Status.flagToday(receiveFlag, uid);
+                        received = true;
+                        Toast.show("节约用水获得[16g能量]");
+                        Log.forest("森林能量⚡️[节约用水]#获得[16g能量]");
+                    } else {
+                        Log.record("节约用水💧领取失败：" + (receiveResult != null ? receiveResult.optString("resultMsg") : receiveJo.toString()));
+                    }
+                }
+                if (!received) {
+                    break;
+                }
+            }
+        } catch (Throwable t) {
+            Log.i(TAG, "checkAndHandleWaterSaveEnergy err:");
             Log.printStackTrace(TAG, t);
         }
     }
