@@ -301,6 +301,11 @@ public class ExtensionsHandle {
                 }
                 try {
                     String response = AntForestRpcCall.queryFriendHomePage(userId);
+                    if (response == null || response.isEmpty()) {
+                        Log.record("拉取总榜：查询用户 " + userId + " 返回数据为空");
+                        failCount++;
+                        continue;
+                    }
                     JSONObject responseJson = new JSONObject(response);
                     if (!"SUCCESS".equals(responseJson.optString("resultCode"))) {
                         Log.record("拉取总榜：查询用户 " + userId + " 失败 " + responseJson.optString("resultDesc"));
@@ -327,6 +332,10 @@ public class ExtensionsHandle {
                     output.put("森林", userBaseInfo.optInt("treeCount", 0));
                     output.put("登录账号", userBaseInfo.optString("loginId", ""));
                     output.put("头像", userBaseInfo.optString("headPortrait", ""));
+                    JSONObject treeDetail = queryUserAreaTrees(userId);
+                    if (treeDetail != null) {
+                        output.put("森林证书明细", treeDetail);
+                    }
                     results.put(output);
                     successCount++;
                     Log.record("拉取总榜：[" + (i + 1) + "/" + userList.length() + "] " + userId + " 查询成功");
@@ -346,6 +355,61 @@ public class ExtensionsHandle {
         } catch (Exception e) {
             Log.record("拉取总榜：异常 " + e.getMessage());
             Log.printStackTrace(TAG, e);
+        }
+    }
+
+    private static JSONObject queryUserAreaTrees(String userId) {
+        try {
+            String response = ProtectTreeRpcCall.queryAreaTrees(userId);
+            if (response == null || response.isEmpty()) {
+                Log.record("拉取总榜：查询用户 " + userId + " 地区树木返回数据为空");
+                return null;
+            }
+            JSONObject jo = new JSONObject(response);
+            if (!"SUCCESS".equals(jo.optString("resultCode"))) {
+                Log.record("拉取总榜：查询用户 " + userId + " 地区树木失败 " + jo.optString("resultDesc"));
+                return null;
+            }
+            JSONObject result = new JSONObject();
+            JSONObject areaTrees = jo.optJSONObject("areaTrees");
+            if (areaTrees != null) {
+                countAreaTrees(result, areaTrees);
+            }
+            JSONObject blessingAreaTrees = jo.optJSONObject("blessingAreaTrees");
+            if (blessingAreaTrees != null) {
+                countAreaTrees(result, blessingAreaTrees);
+            }
+            if (result.length() == 0) {
+                return null;
+            }
+            return result;
+        } catch (Exception e) {
+            Log.record("拉取总榜：查询用户 " + userId + " 地区树木异常 " + e.getMessage());
+            Log.printStackTrace(TAG, e);
+            return null;
+        }
+    }
+
+    private static void countAreaTrees(JSONObject result, JSONObject areaTrees) throws org.json.JSONException {
+        Iterator<String> regionKeys = areaTrees.keys();
+        while (regionKeys.hasNext()) {
+            JSONObject regionTrees = areaTrees.optJSONObject(regionKeys.next());
+            if (regionTrees == null) {
+                continue;
+            }
+            Iterator<String> treeKeys = regionTrees.keys();
+            while (treeKeys.hasNext()) {
+                JSONObject tree = regionTrees.optJSONObject(treeKeys.next());
+                if (tree == null) {
+                    continue;
+                }
+                String name = tree.optString("name", "");
+                if (name.contains("平方米") || name.contains("生物多样性保护")) {
+                    continue;
+                }
+                int number = tree.optInt("number", 0);
+                result.put(name, result.optInt(name, 0) + number);
+            }
         }
     }
 

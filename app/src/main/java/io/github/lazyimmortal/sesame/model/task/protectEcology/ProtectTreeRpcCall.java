@@ -13,6 +13,12 @@ public class ProtectTreeRpcCall {
         return ApplicationHook.requestString("alipay.antmember.forest.h5.queryAreaTrees", "[{}]");
     }
 
+    /* 查询指定用户的地区树苗 */
+    public static String queryAreaTrees(String userId) {
+        String args = "[{\"source\":\"chInfo_ch_appcenter__chsub_9patch\",\"userId\":\"" + userId + "\",\"version\":\"20221215\"}]";
+        return ApplicationHook.requestString("alipay.antmember.forest.h5.queryAreaTrees", args);
+    }
+
     public static String queryTreeItemsForExchange() {
         return ApplicationHook.requestString("alipay.antforest.forest.h5.queryTreeItemsForExchange", "[{}]");
     }
