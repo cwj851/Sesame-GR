@@ -518,6 +518,36 @@ public class AntFarmRpcCall {
         return ApplicationHook.requestString("com.alipay.antfarm.receiveFamilyAward", args);
     }
 
+    public static String queryFamilyInfo() {
+        String args = "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\"}]";
+        return ApplicationHook.requestString("com.alipay.antfarm.queryFamilyInfo", args);
+    }
+
+    public static String queryFamilyDrawActivity() {
+        String args = "[{\"bizType\":\"ANTFARM_GAME_CENTER\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\"}]";
+        return ApplicationHook.requestString("com.alipay.antfarm.queryFamilyDrawActivity", args);
+    }
+
+    public static String familyDraw() {
+        String args = "[{\"bizType\":\"ANTFARM_GAME_CENTER\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\"}]";
+        return ApplicationHook.requestString("com.alipay.antfarm.familyDraw", args);
+    }
+
+    public static String listFarmFamilyDrawTask() {
+        String args = "[{\"bizType\":\"ANTFARM_GAME_CENTER\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM_FAMILY_DRAW_TASK\",\"signSceneCode\":\"\",\"source\":\"H5\",\"taskSceneCode\":\"ANTFARM_FAMILY_DRAW_TASK\"}]";
+        return ApplicationHook.requestString("com.alipay.antfarm.listFarmTask", args);
+    }
+
+    public static String receiveFarmFamilyDrawTaskAward(String taskId) {
+        String args = "[{\"awardType\":\"FAMILY_DRAW_TIME\",\"bizType\":\"ANTFARM_GAME_CENTER\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"taskId\":\"" + taskId + "\",\"taskSceneCode\":\"ANTFARM_FAMILY_DRAW_TASK\"}]";
+        return ApplicationHook.requestString("com.alipay.antfarm.receiveFarmTaskAward", args);
+    }
+
+    public static String receiveFamilyVisitAward(String friendUserId, String uniqueId) {
+        String args = "[{\"friendUserId\":\"" + friendUserId + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"uniqueId\":\"" + uniqueId + "\"}]";
+        return ApplicationHook.requestString("com.alipay.antfarm.receiveFamilyVisitAward", args);
+    }
+
     public static String familySleep(String groupId) {
         String args = "[{\"groupId\":\"" + groupId + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\"," + "\"source\":\"H5\",\"spaceType\":\"ChickFamily\"}]";
         return ApplicationHook.requestString("com.alipay.antfarm.sleep", args);
